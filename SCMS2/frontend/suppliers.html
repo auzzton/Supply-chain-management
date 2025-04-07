@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supply Chain Management | Suppliers</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/suppliers.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-boxes"></i>
+                <span>SCM System</span>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="index.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="inventory.html"><i class="fas fa-box-open"></i> Inventory</a></li>
+                    <li><a href="orders.html"><i class="fas fa-clipboard-list"></i> Orders</a></li>
+                    <li class="active"><a href="suppliers.html"><i class="fas fa-truck"></i> Suppliers</a></li>
+                    <li><a href="warehouses.html"><i class="fas fa-warehouse"></i> Warehouses</a></li>
+                    <li><a href="about.html"><i class="fas fa-info-circle"></i> About</a></li>
+                    <li><a href="contact.html"><i class="fas fa-envelope"></i> Contact</a></li>
+                </ul>
+            </nav>
+            <div class="user-profile">
+                <img src="https://via.placeholder.com/40" alt="User">
+                <div>
+                    <span class="username">Admin User</span>
+                    <span class="role">System Administrator</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <h1>Supplier Management</h1>
+                <div class="header-actions">
+                    <div class="search-bar">
+                        <input type="text" placeholder="Search suppliers..." id="suppliers-search">
+                        <button><i class="fas fa-search"></i></button>
+                    </div>
+                    <button class="btn btn-primary" id="add-supplier-btn">
+                        <i class="fas fa-plus"></i> Add Supplier
+                    </button>
+                </div>
+            </header>
+
+            <div class="suppliers-filters">
+                <div class="filter-group">
+                    <label for="product-category-filter">Product Category:</label>
+                    <select id="product-category-filter">
+                        <option value="all">All Categories</option>
+                        <!-- Filled by JavaScript -->
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="rating-filter">Rating:</label>
+                    <select id="rating-filter">
+                        <option value="all">All Ratings</option>
+                        <option value="5">5 Stars</option>
+                        <option value="4">4+ Stars</option>
+                        <option value="3">3+ Stars</option>
+                        <option value="2">2+ Stars</option>
+                        <option value="1">1+ Stars</option>
+                    </select>
+                </div>
+                <button class="btn btn-secondary" id="reset-suppliers-filters">
+                    <i class="fas fa-sync-alt"></i> Reset
+                </button>
+            </div>
+
+            <div class="suppliers-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-suppliers">0</div>
+                    <div class="stat-label">Total Suppliers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="active-suppliers">0</div>
+                    <div class="stat-label">Active Suppliers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avg-rating">0.0</div>
+                    <div class="stat-label">Avg. Rating</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="top-category">-</div>
+                    <div class="stat-label">Top Category</div>
+                </div>
+            </div>
+
+            <div class="suppliers-table-container">
+                <table class="suppliers-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Supplier Name</th>
+                            <th>Contact</th>
+                            <th>Email</th>
+                            <th>Products</th>
+                            <th>Rating</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="suppliers-table-body">
+                        <!-- Filled by JavaScript -->
+                    </tbody>
+                </table>
+                <div class="table-pagination">
+                    <button class="btn btn-secondary" id="suppliers-prev-page" disabled>
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <span id="suppliers-page-info">Page 1 of 1</span>
+                    <button class="btn btn-secondary" id="suppliers-next-page" disabled>
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit Supplier Modal -->
+    <div class="modal" id="supplier-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="supplier-modal-title">Add New Supplier</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="supplier-form">
+                    <input type="hidden" id="supplier-id">
+                    <div class="form-group">
+                        <label for="supplier-name">Supplier Name</label>
+                        <input type="text" id="supplier-name" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="supplier-contact">Contact Person</label>
+                            <input type="text" id="supplier-contact" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="supplier-phone">Phone</label>
+                            <input type="tel" id="supplier-phone" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="supplier-email">Email</label>
+                        <input type="email" id="supplier-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="supplier-address">Address</label>
+                        <textarea id="supplier-address" rows="2" required></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="supplier-rating">Rating</label>
+                            <select id="supplier-rating" required>
+                                <option value="5">5 Stars</option>
+                                <option value="4">4 Stars</option>
+                                <option value="3">3 Stars</option>
+                                <option value="2">2 Stars</option>
+                                <option value="1">1 Star</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="supplier-status">Status</label>
+                            <select id="supplier-status" required>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                                <option value="pending">Pending Approval</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="supplier-products">Products/Categories</label>
+                        <select id="supplier-products" multiple>
+                            <!-- Filled by JavaScript -->
+                        </select>
+                        <small class="form-hint">Hold Ctrl/Cmd to select multiple</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="supplier-notes">Notes</label>
+                        <textarea id="supplier-notes" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary close-modal">Cancel</button>
+                <button class="btn btn-primary" id="save-supplier">Save Supplier</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/suppliers.js"></script>
+</body>
+</html>

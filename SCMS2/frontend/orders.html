@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supply Chain Management | Orders</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/orders.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-boxes"></i>
+                <span>SCM System</span>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="index.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="inventory.html"><i class="fas fa-box-open"></i> Inventory</a></li>
+                    <li class="active"><a href="orders.html"><i class="fas fa-clipboard-list"></i> Orders</a></li>
+                    <li><a href="suppliers.html"><i class="fas fa-truck"></i> Suppliers</a></li>
+                    <li><a href="warehouses.html"><i class="fas fa-warehouse"></i> Warehouses</a></li>
+                    <li><a href="about.html"><i class="fas fa-info-circle"></i> About</a></li>
+                    <li><a href="contact.html"><i class="fas fa-envelope"></i> Contact</a></li>
+                </ul>
+            </nav>
+            <div class="user-profile">
+                <img src="https://via.placeholder.com/40" alt="User">
+                <div>
+                    <span class="username">Admin User</span>
+                    <span class="role">System Administrator</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <h1>Order Management</h1>
+                <div class="header-actions">
+                    <div class="search-bar">
+                        <input type="text" placeholder="Search orders..." id="orders-search">
+                        <button><i class="fas fa-search"></i></button>
+                    </div>
+                    <button class="btn btn-primary" id="add-order-btn">
+                        <i class="fas fa-plus"></i> Create Order
+                    </button>
+                </div>
+            </header>
+
+            <div class="orders-filters">
+                <div class="filter-group">
+                    <label for="status-filter">Status:</label>
+                    <select id="status-filter">
+                        <option value="all">All Statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="processing">Processing</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="date-from">From:</label>
+                    <input type="date" id="date-from">
+                </div>
+                <div class="filter-group">
+                    <label for="date-to">To:</label>
+                    <input type="date" id="date-to">
+                </div>
+                <div class="filter-group">
+                    <label for="customer-filter">Customer:</label>
+                    <input type="text" id="customer-filter" placeholder="Customer name">
+                </div>
+                <button class="btn btn-secondary" id="reset-orders-filters">
+                    <i class="fas fa-sync-alt"></i> Reset
+                </button>
+            </div>
+
+            <div class="orders-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-orders-value">$0</div>
+                    <div class="stat-label">Total Orders Value</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-orders-count">0</div>
+                    <div class="stat-label">Total Orders</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="pending-orders-count">0</div>
+                    <div class="stat-label">Pending Orders</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avg-order-value">$0</div>
+                    <div class="stat-label">Avg. Order Value</div>
+                </div>
+            </div>
+
+            <div class="orders-table-container">
+                <table class="orders-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Date</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-table-body">
+                        <!-- Filled by JavaScript -->
+                    </tbody>
+                </table>
+                <div class="table-pagination">
+                    <button class="btn btn-secondary" id="orders-prev-page" disabled>
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <span id="orders-page-info">Page 1 of 1</span>
+                    <button class="btn btn-secondary" id="orders-next-page" disabled>
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Order Detail Modal -->
+    <div class="modal" id="order-modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3 id="order-modal-title">Order Details</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="order-detail-header">
+                    <div class="order-info">
+                        <div><strong>Order ID:</strong> <span id="detail-order-id">-</span></div>
+                        <div><strong>Date:</strong> <span id="detail-order-date">-</span></div>
+                        <div><strong>Status:</strong> <span id="detail-order-status">-</span></div>
+                    </div>
+                    <div class="customer-info">
+                        <div><strong>Customer:</strong> <span id="detail-customer">-</span></div>
+                        <div><strong>Contact:</strong> <span id="detail-contact">-</span></div>
+                        <div><strong>Email:</strong> <span id="detail-email">-</span></div>
+                    </div>
+                </div>
+                
+                <div class="order-items-container">
+                    <h4>Order Items</h4>
+                    <table class="order-items-table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Quantity</th>
+                                <th>Unit Price</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="order-items-body">
+                            <!-- Filled by JavaScript -->
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="text-right"><strong>Subtotal:</strong></td>
+                                <td id="order-subtotal">$0.00</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-right"><strong>Tax:</strong></td>
+                                <td id="order-tax">$0.00</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-right"><strong>Total:</strong></td>
+                                <td id="order-total">$0.00</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <div class="order-notes">
+                    <h4>Notes</h4>
+                    <p id="order-notes-text">No notes available for this order.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary close-modal">Close</button>
+                <button class="btn btn-primary" id="print-order">Print Order</button>
+                <div class="status-actions" id="status-actions">
+                    <!-- Status action buttons will be added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create/Edit Order Modal -->
+    <div class="modal" id="edit-order-modal">
+        <div class="modal-content xlarge">
+            <div class="modal-header">
+                <h3 id="edit-order-modal-title">Create New Order</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="order-form">
+                    <input type="hidden" id="edit-order-id">
+                    
+                    <div class="form-section">
+                        <h4>Customer Information</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="order-customer">Customer Name</label>
+                                <input type="text" id="order-customer" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="order-contact">Contact Person</label>
+                                <input type="text" id="order-contact">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="order-email">Email</label>
+                                <input type="email" id="order-email">
+                            </div>
+                            <div class="form-group">
+                                <label for="order-phone">Phone</label>
+                                <input type="tel" id="order-phone">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="order-address">Shipping Address</label>
+                            <textarea id="order-address" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h4>Order Items</h4>
+                        <div class="order-item-controls">
+                            <div class="form-group">
+                                <label for="order-item-select">Select Item</label>
+                                <select id="order-item-select">
+                                    <!-- Filled by JavaScript -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="order-item-quantity">Quantity</label>
+                                <input type="number" id="order-item-quantity" min="1" value="1">
+                            </div>
+                            <button type="button" class="btn btn-secondary" id="add-order-item">
+                                <i class="fas fa-plus"></i> Add Item
+                            </button>
+                        </div>
+                        
+                        <table class="order-items-edit-table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Price</th>
+                                    <th>Total</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="order-items-edit-body">
+                                <!-- Filled by JavaScript -->
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-right"><strong>Subtotal:</strong></td>
+                                    <td id="edit-order-subtotal">$0.00</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-right"><strong>Tax (10%):</strong></td>
+                                    <td id="edit-order-tax">$0.00</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-right"><strong>Total:</strong></td>
+                                    <td id="edit-order-total">$0.00</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h4>Additional Information</h4>
+                        <div class="form-group">
+                            <label for="order-notes">Notes</label>
+                            <textarea id="order-notes" rows="3"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary close-modal">Cancel</button>
+                <button class="btn btn-primary" id="save-order">Save Order</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/orders.js"></script>
+</body>
+</html>

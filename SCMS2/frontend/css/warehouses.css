@@ -1,0 +1,324 @@
+/* Warehouses Specific Styles */
+
+/* Filters */
+.warehouses-filters {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.warehouses-filters .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.warehouses-filters .filter-group label {
+    font-weight: 500;
+    color: var(--dark-color);
+    white-space: nowrap;
+}
+
+.warehouses-filters .filter-group select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    min-width: 150px;
+}
+
+/* Stats Cards */
+.warehouses-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.warehouses-stats .stat-card {
+    background-color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    text-align: center;
+}
+
+.warehouses-stats .stat-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.warehouses-stats .stat-card:nth-child(1) .stat-value {
+    color: var(--primary-color);
+}
+
+.warehouses-stats .stat-card:nth-child(2) .stat-value {
+    color: var(--secondary-color);
+}
+
+.warehouses-stats .stat-card:nth-child(3) .stat-value {
+    color: var(--warning-color);
+}
+
+.warehouses-stats .stat-card:nth-child(4) .stat-value {
+    color: #9b59b6;
+}
+
+.warehouses-stats .stat-label {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+/* Warehouses Container */
+.warehouses-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.warehouses-map {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    height: 400px;
+    position: relative;
+    overflow: hidden;
+}
+
+.map-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #777;
+}
+
+.map-placeholder i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    color: var(--primary-color);
+}
+
+/* Warehouses Table */
+.warehouses-table-container {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.warehouses-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.warehouses-table th {
+    background-color: #f8f9fa;
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--dark-color);
+    border-bottom: 2px solid #eee;
+}
+
+.warehouses-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+.warehouses-table tr:last-child td {
+    border-bottom: none;
+}
+
+.warehouses-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Utilization Bar */
+.utilization-bar {
+    height: 10px;
+    background-color: #e9ecef;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.utilization-fill {
+    height: 100%;
+    border-radius: 5px;
+}
+
+.utilization-high {
+    background-color: #e74c3c;
+    width: 90%;
+}
+
+.utilization-medium {
+    background-color: #f39c12;
+    width: 65%;
+}
+
+.utilization-low {
+    background-color: #2ecc71;
+    width: 40%;
+}
+
+/* Status Badges */
+.warehouse-status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.warehouse-status.active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.warehouse-status.maintenance {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.warehouse-status.closed {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Action Buttons */
+.warehouse-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.btn-warehouse-action {
+    padding: 5px 8px;
+    font-size: 0.8rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+}
+
+.btn-view-warehouse {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-edit-warehouse {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.btn-delete-warehouse {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+/* Pagination */
+.warehouses-table-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    border-top: 1px solid #eee;
+}
+
+#warehouses-page-info {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+/* Warehouse Details Modal */
+.warehouse-detail-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.warehouse-info, .warehouse-capacity-info {
+    display: grid;
+    gap: 10px;
+}
+
+.warehouse-info div, .warehouse-capacity-info div {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+}
+
+.warehouse-inventory-container {
+    margin-bottom: 20px;
+}
+
+.warehouse-inventory-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.warehouse-inventory-table th,
+.warehouse-inventory-table td {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+}
+
+.warehouse-inventory-table th {
+    background-color: #f8f9fa;
+}
+
+/* Responsive Styles */
+@media (max-width: 1200px) {
+    .warehouses-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .warehouses-map {
+        height: 300px;
+    }
+}
+
+@media (max-width: 768px) {
+    .warehouses-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .warehouses-filters .filter-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .warehouses-table th,
+    .warehouses-table td {
+        padding: 8px;
+        font-size: 0.9rem;
+    }
+    
+    .warehouse-actions {
+        flex-direction: column;
+    }
+    
+    .btn-warehouse-action {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+    
+    .warehouse-detail-header {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,0 +1,319 @@
+{
+  "inventory": [
+    {
+      "id": 1,
+      "name": "MacBook Pro 16\"",
+      "category": "Electronics",
+      "quantity": 42,
+      "price": 2399.99,
+      "reorderLevel": 10,
+      "warehouse": "Mumbai Central Warehouse",
+      "supplier": "TechDistro India",
+      "lastRestocked": "2023-06-15",
+      "barcode": "MPB16-2023-SLV",
+      "value": 100799.58,
+      "description": "16-core Neural Engine, 32GB RAM, 1TB SSD, macOS Monterey, Retina Display",
+      "weight": "2 kg",
+      "dimensions": "36.4 x 25.9 x 1.68 cm",
+      "manufacturer": "Apple",
+      "color": "Silver",
+      "warrantyPeriod": "1 year"
+    },
+    {
+      "id": 2,
+      "name": "Ergonomic Office Chair",
+      "category": "Furniture",
+      "quantity": 18,
+      "price": 349.99,
+      "reorderLevel": 5,
+      "warehouse": "Delhi Distribution Center",
+      "supplier": "OfficeFurn India",
+      "lastRestocked": "2023-07-02",
+      "barcode": "ERG-2023-BLK",
+      "value": 6299.82,
+      "description": "Adjustable lumbar support, breathable mesh, reclining mechanism, 360-degree swivel",
+      "weight": "15 kg",
+      "dimensions": "70 x 70 x 120 cm",
+      "manufacturer": "OfficeFurn",
+      "color": "Black",
+      "warrantyPeriod": "5 years"
+    },
+    {
+      "id": 3,
+      "name": "4K Professional Monitor",
+      "category": "Electronics",
+      "quantity": 0,
+      "price": 899.99,
+      "reorderLevel": 8,
+      "warehouse": "Bangalore Tech Hub",
+      "supplier": "DisplayTech India",
+      "lastRestocked": "2023-05-22",
+      "barcode": "MON-4K-27-PRO",
+      "value": 0,
+      "description": "27\" 3840x2160, 99% Adobe RGB, HDR10, USB-C connectivity, Anti-glare screen",
+      "weight": "5.5 kg",
+      "dimensions": "61 x 36.1 x 5.6 cm",
+      "manufacturer": "DisplayTech",
+      "color": "Black",
+      "warrantyPeriod": "3 years"
+    },
+    {
+      "id": 4,
+      "name": "Wireless Mechanical Keyboard",
+      "category": "Electronics",
+      "quantity": 76,
+      "price": 129.99,
+      "reorderLevel": 15,
+      "warehouse": "Delhi Distribution Center",
+      "supplier": "PeripheralTech India",
+      "lastRestocked": "2023-07-18",
+      "barcode": "KB-MECH-WRLS",
+      "value": 9879.24,
+      "description": "RGB backlit, Cherry MX switches, wireless Bluetooth and USB-C, 75% layout",
+      "weight": "0.8 kg",
+      "dimensions": "33 x 13 x 3.6 cm",
+      "manufacturer": "PeripheralTech",
+      "color": "RGB",
+      "warrantyPeriod": "2 years"
+    },
+    {
+      "id": 5,
+      "name": "Executive Desk",
+      "category": "Furniture",
+      "quantity": 7,
+      "price": 799.99,
+      "reorderLevel": 3,
+      "warehouse": "Mumbai Central Warehouse",
+      "supplier": "OfficeFurn India",
+      "lastRestocked": "2023-06-30",
+      "barcode": "DSK-EXEC-72",
+      "value": 5599.93,
+      "description": "72\" walnut finish, built-in cable management, adjustable height",
+      "weight": "50 kg",
+      "dimensions": "180 x 80 x 75 cm",
+      "manufacturer": "OfficeFurn",
+      "color": "Walnut",
+      "warrantyPeriod": "3 years"
+    },
+    {
+      "id": 6,
+      "name": "Portable Power Bank 20000mAh",
+      "category": "Electronics",
+      "quantity": 150,
+      "price": 39.99,
+      "reorderLevel": 30,
+      "warehouse": "Mumbai Central Warehouse",
+      "supplier": "PowerTech India",
+      "lastRestocked": "2023-07-25",
+      "barcode": "PB-20000-MUM",
+      "value": 5998.50,
+      "description": "Fast charging, Dual USB ports, LED display, 20000mAh capacity",
+      "weight": "0.5 kg",
+      "dimensions": "15 x 7.5 x 2.5 cm",
+      "manufacturer": "PowerTech",
+      "color": "Black",
+      "warrantyPeriod": "1 year"
+    }
+  ],
+  "orders": [
+    {
+      "id": 1001,
+      "customer": "Tata Consultancy Services",
+      "contact": "Rajesh Sharma",
+      "email": "rajesh.sharma@tcs.com",
+      "phone": "+91 98765 43210",
+      "items": [
+        {"productId": 1, "quantity": 5, "unitPrice": 2399.99, "name": "MacBook Pro 16\""},
+        {"productId": 3, "quantity": 10, "unitPrice": 899.99, "name": "4K Professional Monitor"}
+      ],
+      "subtotal": 20999.85,
+      "tax": 3150.00,
+      "shipping": 60.00,
+      "total": 24209.85,
+      "status": "completed",
+      "date": "2023-05-15",
+      "shippingAddress": "TCS House, 5th Floor, Fort, Mumbai 400001",
+      "paymentMethod": "Bank Transfer",
+      "notes": "Priority shipping requested",
+      "trackingNumber": "TCS-2023-PRIORITY",
+      "paymentStatus": "Paid",
+      "deliveryDate": "2023-05-18"
+    },
+    {
+      "id": 1002,
+      "customer": "Infosys Limited",
+      "contact": "Priya Patel",
+      "email": "priya.patel@infosys.com",
+      "phone": "+91 87654 32109",
+      "items": [
+        {"productId": 2, "quantity": 8, "unitPrice": 349.99, "name": "Ergonomic Office Chair"}
+      ],
+      "subtotal": 2799.92,
+      "tax": 420.00,
+      "shipping": 0.00,
+      "total": 3219.92,
+      "status": "processing",
+      "date": "2023-05-18",
+      "shippingAddress": "Electronics City, Hosur Road, Bangalore 560100",
+      "paymentMethod": "Corporate Account",
+      "notes": "Delivery before June 1st",
+      "trackingNumber": "INFOSYS-2023-DELIVERY",
+      "paymentStatus": "Pending",
+      "deliveryDate": "2023-05-25"
+    },
+    {
+      "id": 1003,
+      "customer": "Wipro Limited",
+      "contact": "Sandeep Kaur",
+      "email": "sandeep.kaur@wipro.com",
+      "phone": "+91 98765 43211",
+      "items": [
+        {"productId": 4, "quantity": 15, "unitPrice": 129.99, "name": "Wireless Mechanical Keyboard"}
+      ],
+      "subtotal": 1949.85,
+      "tax": 292.48,
+      "shipping": 50.00,
+      "total": 2292.33,
+      "status": "completed",
+      "date": "2023-06-01",
+      "shippingAddress": "Wipro Corporate Office, Sarjapur Road, Bangalore 560035",
+      "paymentMethod": "Corporate Account",
+      "notes": "Standard delivery",
+      "trackingNumber": "WIPRO-2023-SHIPPED",
+      "paymentStatus": "Paid",
+      "deliveryDate": "2023-06-05"
+    }
+  ],
+  "suppliers": [
+    {
+      "id": 1,
+      "name": "TechDistro India",
+      "contact": "Vikram Singh",
+      "email": "vikram@techdistro.in",
+      "phone": "+91 11 2345 6789",
+      "address": "Unit 45, Okhla Industrial Area, Phase II, New Delhi 110020",
+      "products": ["Electronics"],
+      "rating": 4.8,
+      "contractStart": "2022-01-15",
+      "leadTime": 7,
+      "paymentTerms": "Net 30",
+      "status": "active",
+      "notes": "Premium partner, reliable shipping",
+      "bankAccount": "9876543210",
+      "paymentHistory": [
+        {"date": "2023-06-01", "amount": 20000, "method": "Bank Transfer", "status": "Paid"},
+        {"date": "2023-05-01", "amount": 15000, "method": "Bank Transfer", "status": "Paid"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "OfficeFurn India",
+      "contact": "Neha Gupta",
+      "email": "neha@officefurn.in",
+      "phone": "+91 22 3344 5566",
+      "address": "15/2, Andheri East, Mumbai 400069",
+      "products": ["Furniture", "Office Supplies"],
+      "rating": 4.5,
+      "contractStart": "2021-11-03",
+      "leadTime": 14,
+      "paymentTerms": "Net 45",
+      "status": "active",
+      "notes": "Bulk discounts available",
+      "bankAccount": "1234567890",
+      "paymentHistory": [
+        {"date": "2023-06-15", "amount": 12000, "method": "Cheque", "status": "Paid"},
+        {"date": "2023-05-20", "amount": 8000, "method": "Cheque", "status": "Paid"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "PowerTech India",
+      "contact": "Ravi Kumar",
+      "email": "ravi@powertech.in",
+      "phone": "+91 22 5432 9876",
+      "address": "8/9, Vashi Road, Navi Mumbai 400703",
+      "products": ["Electronics"],
+      "rating": 4.6,
+      "contractStart": "2023-03-01",
+      "leadTime": 10,
+      "paymentTerms": "Net 30",
+      "status": "active",
+      "notes": "Specializes in power solutions",
+      "bankAccount": "1122334455",
+      "paymentHistory": [
+        {"date": "2023-07-05", "amount": 5000, "method": "Bank Transfer", "status": "Paid"},
+        {"date": "2023-06-10", "amount": 7000, "method": "Bank Transfer", "status": "Paid"}
+      ]
+    }
+  ],
+  "warehouses": [
+    {
+      "id": 1,
+      "name": "Mumbai Central Warehouse",
+      "location": "Mumbai, Maharashtra",
+      "address": "Saki Vihar Road, Andheri East, Mumbai 400072",
+      "capacity": 50000,
+      "usedCapacity": 38500,
+      "manager": "Rahul Desai",
+      "contact": "+91 22 6789 0123",
+      "status": "active",
+      "operatingHours": "Mon-Fri 9:00-18:00",
+      "description": "Primary West India distribution center",
+      "productsStored": ["Electronics", "Furniture"],
+      "staffCount": 25,
+      "lastInventoryCheck": "2023-07-01",
+      "recentShipment": "2023-07-20",
+      "temperatureControlled": false
+    },
+    {
+      "id": 2,
+      "name": "Delhi Distribution Center",
+      "location": "New Delhi",
+      "address": "Udyog Vihar, Phase V, Gurugram, Haryana 122016",
+      "capacity": 45000,
+      "usedCapacity": 32000,
+      "manager": "Priyanka Sharma",
+      "contact": "+91 11 4567 8901",
+      "status": "active",
+      "operatingHours": "Mon-Sat 8:00-20:00",
+      "description": "Main North India fulfillment center",
+      "productsStored": ["Furniture", "Electronics"],
+      "staffCount": 30,
+      "lastInventoryCheck": "2023-06-28",
+      "recentShipment": "2023-07-15",
+      "temperatureControlled": true
+    }
+  ],
+  "dashboard": {
+    "inventorySummary": {
+      "totalItems": 160,
+      "totalValue": 127178.75,
+      "lowStock": 4,
+      "outOfStock": 2
+    },
+    "ordersSummary": {
+      "pending": 0,
+      "processing": 1,
+      "completed": 2,
+      "cancelled": 0,
+      "totalRevenue": 29501.50
+    },
+    "alerts": [
+      {
+        "type": "critical",
+        "message": "4K Professional Monitor is out of stock",
+        "timestamp": "2023-05-20T08:00:00Z"
+      },
+      {
+        "type": "warning",
+        "message": "Ergonomic Office Chair low stock (5 remaining)",
+        "timestamp": "2023-05-19T14:30:00Z"
+      },
+      {
+        "type": "info",
+        "message": "Scheduled maintenance on Mumbai warehouse HVAC system",
+        "timestamp": "2023-07-12T10:00:00Z"
+      }
+    ]
+  }
+}

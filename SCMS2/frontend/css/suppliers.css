@@ -1,0 +1,247 @@
+/* Suppliers Specific Styles */
+
+/* Filters */
+.suppliers-filters {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.suppliers-filters .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.suppliers-filters .filter-group label {
+    font-weight: 500;
+    color: var(--dark-color);
+    white-space: nowrap;
+}
+
+.suppliers-filters .filter-group select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    min-width: 150px;
+}
+
+/* Stats Cards */
+.suppliers-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.suppliers-stats .stat-card {
+    background-color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    text-align: center;
+}
+
+.suppliers-stats .stat-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.suppliers-stats .stat-card:nth-child(1) .stat-value {
+    color: var(--primary-color);
+}
+
+.suppliers-stats .stat-card:nth-child(2) .stat-value {
+    color: var(--secondary-color);
+}
+
+.suppliers-stats .stat-card:nth-child(3) .stat-value {
+    color: var(--warning-color);
+}
+
+.suppliers-stats .stat-card:nth-child(4) .stat-value {
+    color: #9b59b6;
+}
+
+.suppliers-stats .stat-label {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+/* Suppliers Table */
+.suppliers-table-container {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.suppliers-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.suppliers-table th {
+    background-color: #f8f9fa;
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--dark-color);
+    border-bottom: 2px solid #eee;
+}
+
+.suppliers-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+.suppliers-table tr:last-child td {
+    border-bottom: none;
+}
+
+.suppliers-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Status Badges */
+.supplier-status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.supplier-status.active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.supplier-status.inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.supplier-status.pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* Rating Stars */
+.rating-stars {
+    color: #f39c12;
+    font-size: 0.9rem;
+}
+
+/* Products Tags */
+.products-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.product-tag {
+    background-color: #e8f4fd;
+    color: var(--primary-color);
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
+/* Action Buttons */
+.supplier-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.btn-supplier-action {
+    padding: 5px 8px;
+    font-size: 0.8rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+}
+
+.btn-view-supplier {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-edit-supplier {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.btn-delete-supplier {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+/* Pagination */
+.suppliers-table-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    border-top: 1px solid #eee;
+}
+
+#suppliers-page-info {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+/* Modal Styles */
+#supplier-products {
+    height: auto;
+    min-height: 38px;
+}
+
+.form-hint {
+    color: #666;
+    font-size: 0.8rem;
+    font-style: italic;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .suppliers-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .suppliers-filters .filter-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .suppliers-table th,
+    .suppliers-table td {
+        padding: 8px;
+        font-size: 0.9rem;
+    }
+    
+    .supplier-actions {
+        flex-direction: column;
+    }
+    
+    .btn-supplier-action {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+    
+    .products-tags {
+        flex-direction: column;
+    }
+}

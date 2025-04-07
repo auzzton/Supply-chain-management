@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supply Chain Management | Warehouses</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/warehouses.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-boxes"></i>
+                <span>SCM System</span>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="index.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="inventory.html"><i class="fas fa-box-open"></i> Inventory</a></li>
+                    <li><a href="orders.html"><i class="fas fa-clipboard-list"></i> Orders</a></li>
+                    <li><a href="suppliers.html"><i class="fas fa-truck"></i> Suppliers</a></li>
+                    <li class="active"><a href="warehouses.html"><i class="fas fa-warehouse"></i> Warehouses</a></li>
+                    <li><a href="about.html"><i class="fas fa-info-circle"></i> About</a></li>
+                    <li><a href="contact.html"><i class="fas fa-envelope"></i> Contact</a></li>
+                </ul>
+            </nav>
+            <div class="user-profile">
+                <img src="https://via.placeholder.com/40" alt="User">
+                <div>
+                    <span class="username">Admin User</span>
+                    <span class="role">System Administrator</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <h1>Warehouse Management</h1>
+                <div class="header-actions">
+                    <div class="search-bar">
+                        <input type="text" placeholder="Search warehouses..." id="warehouses-search">
+                        <button><i class="fas fa-search"></i></button>
+                    </div>
+                    <button class="btn btn-primary" id="add-warehouse-btn">
+                        <i class="fas fa-plus"></i> Add Warehouse
+                    </button>
+                </div>
+            </header>
+
+            <div class="warehouses-filters">
+                <div class="filter-group">
+                    <label for="location-filter">Location:</label>
+                    <select id="location-filter">
+                        <option value="all">All Locations</option>
+                        <!-- Filled by JavaScript -->
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="capacity-filter">Capacity:</label>
+                    <select id="capacity-filter">
+                        <option value="all">All Capacities</option>
+                        <option value="high">High (>75%)</option>
+                        <option value="medium">Medium (50-75%)</option>
+                        <option value="low">Low (<50%)</option>
+                    </select>
+                </div>
+                <button class="btn btn-secondary" id="reset-warehouses-filters">
+                    <i class="fas fa-sync-alt"></i> Reset
+                </button>
+            </div>
+
+            <div class="warehouses-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-warehouses">0</div>
+                    <div class="stat-label">Total Warehouses</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-capacity">0</div>
+                    <div class="stat-label">Total Capacity (sq ft)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avg-utilization">0%</div>
+                    <div class="stat-label">Avg. Utilization</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="items-in-warehouses">0</div>
+                    <div class="stat-label">Total Items</div>
+                </div>
+            </div>
+
+            <div class="warehouses-container">
+                <div class="warehouses-map" id="warehouses-map">
+                    <!-- Map will be rendered here -->
+                    <div class="map-placeholder">
+                        <i class="fas fa-map-marked-alt"></i>
+                        <p>Warehouse Locations Map</p>
+                    </div>
+                </div>
+                <div class="warehouses-table-container">
+                    <table class="warehouses-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Warehouse Name</th>
+                                <th>Location</th>
+                                <th>Capacity</th>
+                                <th>Utilization</th>
+                                <th>Manager</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="warehouses-table-body">
+                            <!-- Filled by JavaScript -->
+                        </tbody>
+                    </table>
+                    <div class="table-pagination">
+                        <button class="btn btn-secondary" id="warehouses-prev-page" disabled>
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        <span id="warehouses-page-info">Page 1 of 1</span>
+                        <button class="btn btn-secondary" id="warehouses-next-page" disabled>
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit Warehouse Modal -->
+    <div class="modal" id="warehouse-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="warehouse-modal-title">Add New Warehouse</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="warehouse-form">
+                    <input type="hidden" id="warehouse-id">
+                    <div class="form-group">
+                        <label for="warehouse-name">Warehouse Name</label>
+                        <input type="text" id="warehouse-name" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="warehouse-location">Location</label>
+                            <input type="text" id="warehouse-location" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="warehouse-capacity">Capacity (sq ft)</label>
+                            <input type="number" id="warehouse-capacity" min="1" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="warehouse-manager">Manager</label>
+                            <input type="text" id="warehouse-manager" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="warehouse-contact">Contact</label>
+                            <input type="tel" id="warehouse-contact" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="warehouse-status">Status</label>
+                        <select id="warehouse-status" required>
+                            <option value="active">Active</option>
+                            <option value="maintenance">Maintenance</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="warehouse-description">Description</label>
+                        <textarea id="warehouse-description" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary close-modal">Cancel</button>
+                <button class="btn btn-primary" id="save-warehouse">Save Warehouse</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warehouse Details Modal -->
+    <div class="modal" id="warehouse-details-modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3 id="warehouse-details-title">Warehouse Details</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="warehouse-detail-header">
+                    <div class="warehouse-info">
+                        <div><strong>Warehouse ID:</strong> <span id="detail-warehouse-id">-</span></div>
+                        <div><strong>Name:</strong> <span id="detail-warehouse-name">-</span></div>
+                        <div><strong>Location:</strong> <span id="detail-warehouse-location">-</span></div>
+                        <div><strong>Status:</strong> <span id="detail-warehouse-status">-</span></div>
+                    </div>
+                    <div class="warehouse-capacity-info">
+                        <div><strong>Capacity:</strong> <span id="detail-warehouse-capacity">-</span> sq ft</div>
+                        <div><strong>Utilization:</strong> <span id="detail-warehouse-utilization">-</span></div>
+                        <div><strong>Manager:</strong> <span id="detail-warehouse-manager">-</span></div>
+                        <div><strong>Contact:</strong> <span id="detail-warehouse-contact">-</span></div>
+                    </div>
+                </div>
+                
+                <div class="warehouse-inventory-container">
+                    <h4>Inventory in this Warehouse</h4>
+                    <table class="warehouse-inventory-table">
+                        <thead>
+                            <tr>
+                                <th>Item ID</th>
+                                <th>Item Name</th>
+                                <th>Category</th>
+                                <th>Quantity</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody id="warehouse-inventory-body">
+                            <!-- Filled by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary close-modal">Close</button>
+                <button class="btn btn-primary" id="print-warehouse-details">Print Details</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/warehouses.js"></script>
+    <!-- In a real app, you would include a map library like Leaflet or Google Maps -->
+</body>
+</html>
