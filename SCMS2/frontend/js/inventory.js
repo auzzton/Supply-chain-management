@@ -1,331 +1,289 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // DOM Elements
-    const inventoryTableBody = document.getElementById('inventory-table-body');
-    const addInventoryBtn = document.getElementById('add-inventory-btn');
-    const inventoryModal = document.getElementById('inventory-modal');
-    const deleteModal = document.getElementById('delete-modal');
-    const saveInventoryBtn = document.getElementById('save-inventory');
-    const confirmDeleteBtn = document.getElementById('confirm-delete');
-    const inventoryForm = document.getElementById('inventory-form');
-    const categoryFilter = document.getElementById('category-filter');
-    const warehouseFilter = document.getElementById('warehouse-filter');
-    const stockFilter = document.getElementById('stock-filter');
-    const inventorySearch = document.getElementById('inventory-search');
-    const prevPageBtn = document.getElementById('prev-page');
-    const nextPageBtn = document.getElementById('next-page');
-    const pageInfo = document.getElementById('page-info');
+// API Configuration
+const API_BASE_URL = 'http://localhost:5000/api';
+
+// Format price in rupees
+function formatPrice(price) {
+    return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR'
+    }).format(price);
+}
+
+// Update inventory statistics
+function updateInventoryStats(inventory) {
+    const totalValue = inventory.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const totalItems = inventory.length;
+    const lowStockItems = inventory.filter(item => item.quantity > 0 && item.quantity <= (item.reorderLevel || 10)).length;
+    const outOfStock = inventory.filter(item => item.quantity === 0).length;
+
+    document.getElementById('total-inventory-value').textContent = formatPrice(totalValue);
+    document.getElementById('total-items-count').textContent = totalItems;
+    document.getElementById('low-stock-count').textContent = lowStockItems;
+    document.getElementById('out-of-stock-count').textContent = outOfStock;
+}
+
+// Fetch inventory data from backend
+async function fetchInventory() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/inventory`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch inventory data');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching inventory:', error);
+        return [];
+    }
+}
+
+// Populate filter dropdowns
+async function populateFilters(inventory) {
+    const categorySelect = document.getElementById('category-filter');
+    const warehouseSelect = document.getElementById('warehouse-filter');
     
-    // State variables
-    let inventoryData = [];
-    let filteredData = [];
-    let currentPage = 1;
-    const itemsPerPage = 10;
-    let itemToDelete = null;
+    // Get unique categories and warehouses
+    const categories = [...new Set(inventory.map(item => item.category))];
+    const warehouses = [...new Set(inventory.map(item => item.warehouse).filter(Boolean))];
     
-    // Initialize the page
-    initInventory();
+    // Clear existing options except the first one
+    while (categorySelect.options.length > 1) categorySelect.remove(1);
+    while (warehouseSelect.options.length > 1) warehouseSelect.remove(1);
     
-    // Event Listeners
-    addInventoryBtn.addEventListener('click', () => openModal('add'));
-    Array.from(document.getElementsByClassName('close-modal')).forEach(btn => {
-        btn.addEventListener('click', closeModal);
+    // Add category options
+    categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+        categorySelect.appendChild(option);
     });
-    saveInventoryBtn.addEventListener('click', saveInventoryItem);
-    confirmDeleteBtn.addEventListener('click', deleteInventoryItem);
-    categoryFilter.addEventListener('change', filterInventory);
-    warehouseFilter.addEventListener('change', filterInventory);
-    stockFilter.addEventListener('change', filterInventory);
-    inventorySearch.addEventListener('input', filterInventory);
-    prevPageBtn.addEventListener('click', goToPrevPage);
-    nextPageBtn.addEventListener('click', goToNextPage);
     
-    // Initialize Inventory Page
-    function initInventory() {
-        fetch('data.json')
-            .then(response => response.json())
-            .then(data => {
-                inventoryData = data.inventory;
-                filteredData = [...inventoryData];
-                
-                // Populate filters
-                populateFilters(data);
-                
-                // Update stats
-                updateInventoryStats();
-                
-                // Render table
-                renderInventoryTable();
-            })
-            .catch(error => console.error('Error loading inventory data:', error));
-    }
-    
-    // Populate Filter Dropdowns
-    function populateFilters(data) {
-        // Categories
-        const categories = [...new Set(data.inventory.map(item => item.category))];
-        categories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category;
-            option.textContent = category;
-            categoryFilter.appendChild(option);
-            
-            // Also add to modal category dropdown
-            const modalOption = document.createElement('option');
-            modalOption.value = category;
-            modalOption.textContent = category;
-            document.getElementById('item-category').appendChild(modalOption);
-        });
-        
-        // Warehouses
-        const warehouses = [...new Set(data.inventory.map(item => item.warehouse))];
-        warehouses.forEach(warehouse => {
-            const option = document.createElement('option');
-            option.value = warehouse;
-            option.textContent = warehouse;
-            warehouseFilter.appendChild(option);
-            
-            // Also add to modal warehouse dropdown
-            const modalOption = document.createElement('option');
-            modalOption.value = warehouse;
-            modalOption.textContent = warehouse;
-            document.getElementById('item-warehouse').appendChild(modalOption);
-        });
-    }
-    
-    // Render Inventory Table
-    function renderInventoryTable() {
-        inventoryTableBody.innerHTML = '';
-        
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        const paginatedData = filteredData.slice(startIndex, endIndex);
-        
-        if (paginatedData.length === 0) {
-            const row = document.createElement('tr');
-            row.innerHTML = `<td colspan="9" class="no-data">No inventory items found</td>`;
-            inventoryTableBody.appendChild(row);
-            return;
+    // Add warehouse options
+    warehouses.forEach(warehouse => {
+        const option = document.createElement('option');
+        option.value = warehouse;
+        option.textContent = warehouse;
+        warehouseSelect.appendChild(option);
+    });
+}
+
+// Filter inventory items
+function filterInventory(inventory) {
+    const categoryFilter = document.getElementById('category-filter').value;
+    const warehouseFilter = document.getElementById('warehouse-filter').value;
+    const stockFilter = document.getElementById('stock-filter').value;
+    const searchQuery = document.getElementById('inventory-search').value.toLowerCase();
+
+    return inventory.filter(item => {
+        // Category filter
+        if (categoryFilter !== 'all' && item.category !== categoryFilter) {
+            return false;
         }
+
+        // Warehouse filter
+        if (warehouseFilter !== 'all' && item.warehouse !== warehouseFilter) {
+            return false;
+        }
+
+        // Stock status filter
+        const isLowStock = item.quantity > 0 && item.quantity <= (item.reorderLevel || 10);
+        const isOutOfStock = item.quantity === 0;
         
-        paginatedData.forEach(item => {
-            const row = document.createElement('tr');
-            
-            // Determine stock status
-            let statusClass, statusText;
-            if (item.quantity === 0) {
-                statusClass = 'out-of-stock';
-                statusText = 'Out of Stock';
-            } else if (item.quantity < item.reorderLevel) {
-                statusClass = 'low-stock';
-                statusText = 'Low Stock';
-            } else {
-                statusClass = 'in-stock';
-                statusText = 'In Stock';
+        if (stockFilter === 'low-stock' && !isLowStock) return false;
+        if (stockFilter === 'out-of-stock' && !isOutOfStock) return false;
+        if (stockFilter === 'in-stock' && (isLowStock || isOutOfStock)) return false;
+
+        // Search filter
+        if (searchQuery) {
+            const searchableFields = [
+                item.name,
+                item.category,
+                item.warehouse,
+                item.id.toString()
+            ];
+            return searchableFields.some(field => 
+                field && field.toLowerCase().includes(searchQuery)
+            );
+        }
+
+        return true;
+    });
+}
+
+// Initialize inventory table
+async function initializeInventoryTable() {
+    const inventory = await fetchInventory();
+    const filteredInventory = filterInventory(inventory);
+    const tableBody = document.getElementById('inventory-table-body');
+    
+    if (!tableBody) {
+        console.error('Table body element not found');
+        return;
+    }
+    
+    tableBody.innerHTML = '';
+    filteredInventory.forEach(item => {
+        const row = document.createElement('tr');
+        const itemValue = item.price * item.quantity;
+        row.innerHTML = `
+            <td>${item.id}</td>
+            <td>${item.name}</td>
+            <td>${item.category}</td>
+            <td>${item.quantity}</td>
+            <td>${formatPrice(item.price)}</td>
+            <td>${formatPrice(itemValue)}</td>
+            <td>${item.warehouse || '-'}</td>
+            <td>${item.quantity === 0 ? 'Out of Stock' : item.quantity <= (item.reorderLevel || 10) ? 'Low Stock' : 'In Stock'}</td>
+            <td>
+                <button class="btn btn-sm btn-primary" onclick="editInventoryItem(${item.id})">Edit</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteInventoryItem(${item.id})">Delete</button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+
+    // Update inventory statistics
+    updateInventoryStats(inventory);
+    
+    // Populate filter dropdowns
+    await populateFilters(inventory);
+}
+
+// Add new inventory item
+async function addNewInventoryItem(event) {
+    event.preventDefault();
+    const item = {
+        name: document.getElementById('newItemName').value,
+        category: document.getElementById('newItemCategory').value,
+        quantity: parseInt(document.getElementById('newItemQuantity').value),
+        price: parseFloat(document.getElementById('newItemPrice').value),
+        reorderLevel: parseInt(document.getElementById('newItemReorderLevel').value),
+        warehouse: document.getElementById('newItemWarehouse').value,
+        supplier: document.getElementById('newItemSupplier').value
+    };
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/inventory`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(item)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to add inventory item');
+        }
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addInventoryModal'));
+        modal.hide();
+        document.getElementById('addInventoryForm').reset();
+        await initializeInventoryTable();
+    } catch (error) {
+        console.error('Error adding inventory item:', error);
+        alert('Failed to add inventory item');
+    }
+}
+
+// Edit inventory item
+async function editInventoryItem(id) {
+    const inventory = await fetchInventory();
+    const item = inventory.find(i => i.id === id);
+    if (!item) return;
+
+    document.getElementById('editItemId').value = item.id;
+    document.getElementById('editItemName').value = item.name;
+    document.getElementById('editItemCategory').value = item.category;
+    document.getElementById('editItemQuantity').value = item.quantity;
+    document.getElementById('editItemPrice').value = item.price;
+    document.getElementById('editItemWarehouse').value = item.warehouse || '';
+    document.getElementById('editItemSupplier').value = item.supplier || '';
+
+    const modal = new bootstrap.Modal(document.getElementById('editInventoryModal'));
+    modal.show();
+}
+
+// Save edited inventory item
+async function saveEditedInventoryItem(event) {
+    event.preventDefault();
+    const id = document.getElementById('editItemId').value;
+    const item = {
+        name: document.getElementById('editItemName').value,
+        category: document.getElementById('editItemCategory').value,
+        quantity: parseInt(document.getElementById('editItemQuantity').value),
+        price: parseFloat(document.getElementById('editItemPrice').value),
+        warehouse: document.getElementById('editItemWarehouse').value,
+        supplier: document.getElementById('editItemSupplier').value
+    };
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/inventory/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(item)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update inventory item');
+        }
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editInventoryModal'));
+        modal.hide();
+        await initializeInventoryTable();
+    } catch (error) {
+        console.error('Error updating inventory item:', error);
+        alert('Failed to update inventory item');
+    }
+}
+
+// Delete inventory item
+async function deleteInventoryItem(id) {
+    if (confirm('Are you sure you want to delete this item?')) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/inventory/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete inventory item');
             }
-            
-            // Calculate total value
-            const totalValue = item.quantity * item.price;
-            
-            row.innerHTML = `
-                <td>${item.id}</td>
-                <td>${item.name}</td>
-                <td>${item.category}</td>
-                <td>${item.quantity}</td>
-                <td>$${item.price.toFixed(2)}</td>
-                <td>$${totalValue.toFixed(2)}</td>
-                <td>${item.warehouse}</td>
-                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="btn-table btn-edit" data-id="${item.id}">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn-table btn-delete" data-id="${item.id}">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            `;
-            
-            inventoryTableBody.appendChild(row);
-        });
-        
-        // Add event listeners to action buttons
-        document.querySelectorAll('.btn-edit').forEach(btn => {
-            btn.addEventListener('click', () => openModal('edit', btn.dataset.id));
-        });
-        
-        document.querySelectorAll('.btn-delete').forEach(btn => {
-            btn.addEventListener('click', () => confirmDelete(btn.dataset.id));
-        });
-        
-        // Update pagination controls
-        updatePaginationControls();
-    }
-    
-    // Update Inventory Stats
-    function updateInventoryStats() {
-        const totalValue = filteredData.reduce((sum, item) => sum + (item.quantity * item.price), 0);
-        const totalItems = filteredData.length;
-        const lowStockItems = filteredData.filter(item => item.quantity > 0 && item.quantity < item.reorderLevel).length;
-        const outOfStockItems = filteredData.filter(item => item.quantity === 0).length;
-        
-        document.getElementById('total-inventory-value').textContent = `$${totalValue.toFixed(2)}`;
-        document.getElementById('total-items-count').textContent = totalItems;
-        document.getElementById('low-stock-count').textContent = lowStockItems;
-        document.getElementById('out-of-stock-count').textContent = outOfStockItems;
-    }
-    
-    // Filter Inventory
-    function filterInventory() {
-        const category = categoryFilter.value;
-        const warehouse = warehouseFilter.value;
-        const stockStatus = stockFilter.value;
-        const searchTerm = inventorySearch.value.toLowerCase();
-        
-        filteredData = inventoryData.filter(item => {
-            // Category filter
-            if (category !== 'all' && item.category !== category) return false;
-            
-            // Warehouse filter
-            if (warehouse !== 'all' && item.warehouse !== warehouse) return false;
-            
-            // Stock status filter
-            if (stockStatus !== 'all') {
-                if (stockStatus === 'in-stock' && (item.quantity === 0 || item.quantity < item.reorderLevel)) return false;
-                if (stockStatus === 'low-stock' && (item.quantity === 0 || item.quantity >= item.reorderLevel)) return false;
-                if (stockStatus === 'out-of-stock' && item.quantity !== 0) return false;
-            }
-            
-            // Search term
-            if (searchTerm && !(
-                item.name.toLowerCase().includes(searchTerm) ||
-                item.category.toLowerCase().includes(searchTerm) ||
-                item.warehouse.toLowerCase().includes(searchTerm) ||
-                item.id.toString().includes(searchTerm)
-            )) return false;
-            
-            return true;
-        });
-        
-        // Reset to first page
-        currentPage = 1;
-        
-        // Update table and stats
-        renderInventoryTable();
-        updateInventoryStats();
-    }
-    
-    // Open Modal
-    function openModal(action, itemId = null) {
-        const modalTitle = document.getElementById('modal-title');
-        const form = document.getElementById('inventory-form');
-        
-        if (action === 'add') {
-            modalTitle.textContent = 'Add New Inventory Item';
-            form.reset();
-            document.getElementById('item-id').value = '';
-        } else if (action === 'edit' && itemId) {
-            modalTitle.textContent = 'Edit Inventory Item';
-            const item = inventoryData.find(i => i.id.toString() === itemId);
-            if (item) {
-                document.getElementById('item-id').value = item.id;
-                document.getElementById('item-name').value = item.name;
-                document.getElementById('item-category').value = item.category;
-                document.getElementById('item-quantity').value = item.quantity;
-                document.getElementById('item-price').value = item.price;
-                document.getElementById('item-reorder').value = item.reorderLevel;
-                document.getElementById('item-warehouse').value = item.warehouse;
-                document.getElementById('item-description').value = item.description || '';
-            }
-        }
-        
-        inventoryModal.classList.add('active');
-    }
-    
-    // Close Modal
-    function closeModal() {
-        inventoryModal.classList.remove('active');
-        deleteModal.classList.remove('active');
-    }
-    
-    // Confirm Delete
-    function confirmDelete(itemId) {
-        itemToDelete = itemId;
-        deleteModal.classList.add('active');
-    }
-    
-    // Save Inventory Item
-    function saveInventoryItem() {
-        if (!inventoryForm.checkValidity()) {
-            inventoryForm.reportValidity();
-            return;
-        }
-        
-        const itemId = document.getElementById('item-id').value;
-        const itemData = {
-            id: itemId ? parseInt(itemId) : generateNewId(),
-            name: document.getElementById('item-name').value,
-            category: document.getElementById('item-category').value,
-            quantity: parseInt(document.getElementById('item-quantity').value),
-            price: parseFloat(document.getElementById('item-price').value),
-            reorderLevel: parseInt(document.getElementById('item-reorder').value),
-            warehouse: document.getElementById('item-warehouse').value,
-            description: document.getElementById('item-description').value
-        };
-        
-        if (itemId) {
-            // Update existing item
-            const index = inventoryData.findIndex(item => item.id.toString() === itemId);
-            if (index !== -1) {
-                inventoryData[index] = itemData;
-            }
-        } else {
-            // Add new item
-            inventoryData.unshift(itemData);
-        }
-        
-        // Update filtered data and UI
-        filterInventory();
-        closeModal();
-    }
-    
-    // Delete Inventory Item
-    function deleteInventoryItem() {
-        if (itemToDelete) {
-            inventoryData = inventoryData.filter(item => item.id.toString() !== itemToDelete);
-            filterInventory();
-            closeModal();
-            itemToDelete = null;
+
+            await initializeInventoryTable();
+        } catch (error) {
+            console.error('Error deleting inventory item:', error);
+            alert('Failed to delete inventory item');
         }
     }
+}
+
+// Reset filters
+function resetFilters() {
+    document.getElementById('category-filter').value = 'all';
+    document.getElementById('warehouse-filter').value = 'all';
+    document.getElementById('stock-filter').value = 'all';
+    document.getElementById('inventory-search').value = '';
+    initializeInventoryTable();
+}
+
+// Initialize when document is ready
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize inventory table
+    initializeInventoryTable();
     
-    // Generate New ID
-    function generateNewId() {
-        return inventoryData.length > 0 ? Math.max(...inventoryData.map(item => item.id)) + 1 : 1;
-    }
+    // Add event listeners
+    document.getElementById('add-inventory-btn').addEventListener('click', () => {
+        const modal = new bootstrap.Modal(document.getElementById('addInventoryModal'));
+        modal.show();
+    });
+
+    document.getElementById('addInventoryForm').addEventListener('submit', addNewInventoryItem);
+    document.getElementById('editInventoryForm').addEventListener('submit', saveEditedInventoryItem);
+    document.getElementById('reset-filters').addEventListener('click', resetFilters);
     
-    // Pagination Functions
-    function updatePaginationControls() {
-        const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-        
-        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
-        prevPageBtn.disabled = currentPage === 1;
-        nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
-    }
-    
-    function goToPrevPage() {
-        if (currentPage > 1) {
-            currentPage--;
-            renderInventoryTable();
-        }
-    }
-    
-    function goToNextPage() {
-        const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-        if (currentPage < totalPages) {
-            currentPage++;
-            renderInventoryTable();
-        }
-    }
+    // Add filter and search event listeners
+    document.getElementById('category-filter').addEventListener('change', initializeInventoryTable);
+    document.getElementById('warehouse-filter').addEventListener('change', initializeInventoryTable);
+    document.getElementById('stock-filter').addEventListener('change', initializeInventoryTable);
+    document.getElementById('inventory-search').addEventListener('input', initializeInventoryTable);
 });

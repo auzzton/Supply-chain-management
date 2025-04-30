@@ -1,530 +1,414 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // DOM Elements
-    const ordersTableBody = document.getElementById('orders-table-body');
-    const addOrderBtn = document.getElementById('add-order-btn');
-    const orderModal = document.getElementById('order-modal');
-    const editOrderModal = document.getElementById('edit-order-modal');
-    const saveOrderBtn = document.getElementById('save-order');
-    const orderForm = document.getElementById('order-form');
-    const statusFilter = document.getElementById('status-filter');
-    const dateFromFilter = document.getElementById('date-from');
-    const dateToFilter = document.getElementById('date-to');
-    const customerFilter = document.getElementById('customer-filter');
-    const ordersSearch = document.getElementById('orders-search');
-    const prevPageBtn = document.getElementById('orders-prev-page');
-    const nextPageBtn = document.getElementById('orders-next-page');
-    const pageInfo = document.getElementById('orders-page-info');
-    const addOrderItemBtn = document.getElementById('add-order-item');
-    const orderItemSelect = document.getElementById('order-item-select');
-    const orderItemQuantity = document.getElementById('order-item-quantity');
-    const orderItemsEditBody = document.getElementById('order-items-edit-body');
-    const printOrderBtn = document.getElementById('print-order');
+// API Configuration
+const API_BASE_URL = 'http://localhost:5000/api';
 
-    // State variables
-    let ordersData = [];
-    let inventoryData = [];
-    let filteredOrders = [];
-    let currentOrderItems = [];
-    let currentPage = 1;
-    const itemsPerPage = 10;
-    let currentOrderId = null;
+// Format price in rupees
+function formatPrice(price) {
+    return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR'
+    }).format(price);
+}
 
-    // Initialize the page
-    initOrders();
+// Update order statistics
+function updateOrderStats(orders) {
+    const totalValue = orders.reduce((sum, order) => sum + parseFloat(order.total), 0);
+    const totalOrders = orders.length;
+    const pendingOrders = orders.filter(order => order.status === 'pending').length;
+    
+    document.getElementById('total-orders-value').textContent = formatPrice(totalValue);
+    document.getElementById('total-orders-count').textContent = totalOrders;
+    document.getElementById('pending-orders-count').textContent = pendingOrders;
+}
 
-    // Event Listeners
-    addOrderBtn.addEventListener('click', () => openEditModal('add'));
-    Array.from(document.getElementsByClassName('close-modal')).forEach(btn => {
-        btn.addEventListener('click', closeModal);
-    });
-    saveOrderBtn.addEventListener('click', saveOrder);
-    statusFilter.addEventListener('change', filterOrders);
-    customerFilter.addEventListener('input', filterOrders);
-    ordersSearch.addEventListener('input', filterOrders);
-    dateFromFilter.addEventListener('change', filterOrders);
-    dateToFilter.addEventListener('change', filterOrders);
-    prevPageBtn.addEventListener('click', goToPrevPage);
-    nextPageBtn.addEventListener('click', goToNextPage);
-    addOrderItemBtn.addEventListener('click', addOrderItem);
-    printOrderBtn.addEventListener('click', printOrder);
-
-    // Initialize Orders Page
-    function initOrders() {
-        fetch('data.json')
-            .then(response => response.json())
-            .then(data => {
-                ordersData = data.orders;
-                inventoryData = data.inventory;
-                filteredOrders = [...ordersData];
-                
-                // Populate inventory items dropdown
-                populateInventoryItems();
-                
-                // Set default dates
-                setDefaultDates();
-                
-                // Update stats
-                updateOrdersStats();
-                
-                // Render table
-                renderOrdersTable();
-            })
-            .catch(error => console.error('Error loading orders data:', error));
+// Fetch orders from backend
+async function fetchOrders() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/orders`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch orders');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching orders:', error);
+        return [];
     }
+}
 
-    // Populate Inventory Items Dropdown
-    function populateInventoryItems() {
-        orderItemSelect.innerHTML = '<option value="">Select an item</option>';
-        
-        inventoryData.forEach(item => {
+// Fetch inventory items for order creation
+async function fetchInventory() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/inventory`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch inventory');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching inventory:', error);
+        return [];
+    }
+}
+
+// Initialize orders table
+async function initializeOrdersTable() {
+    const orders = await fetchOrders();
+    const tableBody = document.getElementById('orders-table-body');
+    if (!tableBody) {
+        console.error('Table body element not found');
+        return;
+    }
+    
+    tableBody.innerHTML = '';
+    orders.forEach(order => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${order.id}</td>
+            <td>${order.customer}</td>
+            <td>${order.date}</td>
+            <td>${order.items.length}</td>
+            <td>${formatPrice(order.total)}</td>
+            <td>${order.status}</td>
+            <td>
+                <button class="btn btn-sm btn-info" onclick="viewOrder(${order.id})">View</button>
+                <button class="btn btn-sm btn-primary" onclick="editOrder(${order.id})">Edit</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteOrder(${order.id})">Delete</button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+
+    // Update order statistics
+    updateOrderStats(orders);
+}
+
+// Populate inventory items in the order form
+async function populateInventoryItems() {
+    const inventory = await fetchInventory();
+    const itemSelect = document.getElementById('itemSelect');
+    
+    if (!itemSelect) return;
+    
+    itemSelect.innerHTML = '<option value="">Select Item</option>';
+    inventory.forEach(item => {
+        if (item.quantity > 0) {  // Only show items with available stock
             const option = document.createElement('option');
             option.value = item.id;
-            option.textContent = `${item.name} (${item.category}) - $${item.price.toFixed(2)}`;
-            orderItemSelect.appendChild(option);
-        });
-    }
-
-    // Set Default Dates
-    function setDefaultDates() {
-        const today = new Date();
-        const oneMonthAgo = new Date();
-        oneMonthAgo.setMonth(today.getMonth() - 1);
-        
-        dateFromFilter.valueAsDate = oneMonthAgo;
-        dateToFilter.valueAsDate = today;
-    }
-
-    // Render Orders Table
-    function renderOrdersTable() {
-        ordersTableBody.innerHTML = '';
-        
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        const paginatedData = filteredOrders.slice(startIndex, endIndex);
-        
-        if (paginatedData.length === 0) {
-            const row = document.createElement('tr');
-            row.innerHTML = `<td colspan="7" class="no-data">No orders found</td>`;
-            ordersTableBody.appendChild(row);
-            return;
+            option.textContent = `${item.name} (${formatPrice(item.price)})`;
+            option.dataset.price = item.price;
+            option.dataset.name = item.name;
+            option.dataset.available = item.quantity;
+            itemSelect.appendChild(option);
         }
-        
-        paginatedData.forEach(order => {
-            const row = document.createElement('tr');
-            
-            // Calculate total items
-            const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
-            
-            // Format date
-            const orderDate = new Date(order.date);
-            const formattedDate = orderDate.toLocaleDateString();
-            
-            row.innerHTML = `
-                <td>#${order.id}</td>
-                <td>${order.customer}</td>
-                <td>${formattedDate}</td>
-                <td>${totalItems}</td>
-                <td>$${order.total.toFixed(2)}</td>
-                <td><span class="order-status ${order.status}">${order.status.charAt(0).toUpperCase() + order.status.slice(1)}</span></td>
-                <td>
-                    <div class="order-actions">
-                        <button class="btn-order-action btn-view-order" data-id="${order.id}">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn-order-action btn-edit-order" data-id="${order.id}">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn-order-action btn-cancel-order" data-id="${order.id}" ${order.status === 'cancelled' ? 'disabled' : ''}>
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                </td>
-            `;
-            
-            ordersTableBody.appendChild(row);
-        });
-        
-        // Add event listeners to action buttons
-        document.querySelectorAll('.btn-view-order').forEach(btn => {
-            btn.addEventListener('click', () => viewOrderDetails(btn.dataset.id));
-        });
-        
-        document.querySelectorAll('.btn-edit-order').forEach(btn => {
-            btn.addEventListener('click', () => openEditModal('edit', btn.dataset.id));
-        });
-        
-        document.querySelectorAll('.btn-cancel-order').forEach(btn => {
-            btn.addEventListener('click', () => cancelOrder(btn.dataset.id));
-        });
-        
-        // Update pagination controls
-        updatePaginationControls();
+    });
+}
+
+// Add item to order
+function addItemToOrder() {
+    const itemSelect = document.getElementById('itemSelect');
+    const quantity = document.getElementById('itemQuantity');
+    const orderItems = document.getElementById('orderItems');
+    
+    const selectedOption = itemSelect.options[itemSelect.selectedIndex];
+    if (!selectedOption.value || !quantity.value) {
+        alert('Please select an item and specify quantity');
+        return;
     }
 
-    // Update Orders Stats
-    function updateOrdersStats() {
-        const totalValue = filteredOrders.reduce((sum, order) => sum + order.total, 0);
-        const totalOrders = filteredOrders.length;
-        const pendingOrders = filteredOrders.filter(order => order.status === 'pending').length;
-        const avgOrderValue = totalOrders > 0 ? totalValue / totalOrders : 0;
-        
-        document.getElementById('total-orders-value').textContent = `$${totalValue.toFixed(2)}`;
-        document.getElementById('total-orders-count').textContent = totalOrders;
-        document.getElementById('pending-orders-count').textContent = pendingOrders;
-        document.getElementById('avg-order-value').textContent = `$${avgOrderValue.toFixed(2)}`;
+    const available = parseInt(selectedOption.dataset.available);
+    const requestedQty = parseInt(quantity.value);
+    
+    if (requestedQty > available) {
+        alert(`Only ${available} units available in stock`);
+        return;
     }
 
-    // Filter Orders
-    function filterOrders() {
-        const status = statusFilter.value;
-        const customer = customerFilter.value.toLowerCase();
-        const searchTerm = ordersSearch.value.toLowerCase();
-        const dateFrom = dateFromFilter.value ? new Date(dateFromFilter.value) : null;
-        const dateTo = dateToFilter.value ? new Date(dateToFilter.value) : null;
-        
-        filteredOrders = ordersData.filter(order => {
-            // Status filter
-            if (status !== 'all' && order.status !== status) return false;
-            
-            // Customer filter
-            if (customer && !order.customer.toLowerCase().includes(customer)) return false;
-            
-            // Date range filter
-            const orderDate = new Date(order.date);
-            if (dateFrom && orderDate < dateFrom) return false;
-            if (dateTo && orderDate > dateTo) return false;
-            
-            // Search term
-            if (searchTerm && !(
-                order.customer.toLowerCase().includes(searchTerm) ||
-                order.id.toString().includes(searchTerm) ||
-                order.date.includes(searchTerm)
-            )) return false;
-            
-            return true;
+    const itemId = parseInt(selectedOption.value);
+    const itemName = selectedOption.dataset.name;
+    const price = parseFloat(selectedOption.dataset.price);
+    const total = price * requestedQty;
+
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td>${itemName}</td>
+        <td>${requestedQty}</td>
+        <td>${formatPrice(price)}</td>
+        <td>${formatPrice(total)}</td>
+        <td>
+            <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove(); updateOrderTotal();">
+                Remove
+            </button>
+        </td>
+        <input type="hidden" name="items" value='${JSON.stringify({
+            itemId: itemId,
+            name: itemName,
+            quantity: requestedQty,
+            price: price
+        })}'>
+    `;
+    orderItems.appendChild(row);
+    
+    // Reset inputs
+    itemSelect.value = '';
+    quantity.value = '';
+    
+    // Update total
+    updateOrderTotal();
+}
+
+// Update order total
+function updateOrderTotal() {
+    const items = document.getElementsByName('items');
+    const total = Array.from(items).reduce((sum, item) => {
+        const itemData = JSON.parse(item.value);
+        return sum + (itemData.price * itemData.quantity);
+    }, 0);
+    
+    document.getElementById('orderTotal').textContent = formatPrice(total);
+}
+
+// Create new order
+async function createOrder(event) {
+    event.preventDefault();
+    
+    const items = Array.from(document.getElementsByName('items')).map(item => JSON.parse(item.value));
+    if (items.length === 0) {
+        alert('Please add at least one item to the order');
+        return;
+    }
+
+    const customer = document.getElementById('customer').value;
+    if (!customer) {
+        alert('Please enter customer name');
+        return;
+    }
+
+    const order = {
+        customer: customer,
+        status: 'pending',  // Default status for new orders
+        items: items
+    };
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/orders`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(order)
         });
-        
-        // Reset to first page
-        currentPage = 1;
-        
-        // Update table and stats
-        renderOrdersTable();
-        updateOrdersStats();
-    }
 
-    // View Order Details
-    function viewOrderDetails(orderId) {
-        const order = ordersData.find(o => o.id.toString() === orderId);
-        if (!order) return;
-        
-        // Set order details
-        document.getElementById('detail-order-id').textContent = order.id;
-        document.getElementById('detail-order-date').textContent = new Date(order.date).toLocaleDateString();
-        document.getElementById('detail-order-status').textContent = order.status.charAt(0).toUpperCase() + order.status.slice(1);
-        document.getElementById('detail-customer').textContent = order.customer;
-        document.getElementById('detail-contact').textContent = order.contact || 'N/A';
-        document.getElementById('detail-email').textContent = order.email || 'N/A';
-        
-        // Set order items
-        const orderItemsBody = document.getElementById('order-items-body');
-        orderItemsBody.innerHTML = '';
-        
-        order.items.forEach(item => {
-            const product = inventoryData.find(p => p.id === item.productId);
-            if (product) {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${product.name} (${product.category})</td>
-                    <td>${item.quantity}</td>
-                    <td>$${product.price.toFixed(2)}</td>
-                    <td>$${(product.price * item.quantity).toFixed(2)}</td>
-                `;
-                orderItemsBody.appendChild(row);
-            }
-        });
-        
-        // Set totals
-        document.getElementById('order-subtotal').textContent = `$${order.total.toFixed(2)}`;
-        document.getElementById('order-tax').textContent = '$0.00'; // Assuming no tax for now
-        document.getElementById('order-total').textContent = `$${order.total.toFixed(2)}`;
-        
-        // Set notes
-        document.getElementById('order-notes-text').textContent = order.notes || 'No notes available for this order.';
-        
-        // Update status actions
-        updateStatusActions(order);
-        
-        // Open modal
-        document.getElementById('order-modal-title').textContent = `Order #${order.id} Details`;
-        orderModal.classList.add('active');
-    }
-
-    // Update Status Actions
-    function updateStatusActions(order) {
-        const statusActions = document.getElementById('status-actions');
-        statusActions.innerHTML = '';
-        
-        if (order.status === 'pending') {
-            const processBtn = document.createElement('button');
-            processBtn.className = 'btn btn-primary';
-            processBtn.innerHTML = '<i class="fas fa-cog"></i> Process Order';
-            processBtn.addEventListener('click', () => updateOrderStatus(order.id, 'processing'));
-            statusActions.appendChild(processBtn);
-            
-            const cancelBtn = document.createElement('button');
-            cancelBtn.className = 'btn btn-danger';
-            cancelBtn.innerHTML = '<i class="fas fa-times"></i> Cancel Order';
-            cancelBtn.addEventListener('click', () => updateOrderStatus(order.id, 'cancelled'));
-            statusActions.appendChild(cancelBtn);
-        } else if (order.status === 'processing') {
-            const completeBtn = document.createElement('button');
-            completeBtn.className = 'btn btn-success';
-            completeBtn.innerHTML = '<i class="fas fa-check"></i> Complete Order';
-            completeBtn.addEventListener('click', () => updateOrderStatus(order.id, 'completed'));
-            statusActions.appendChild(completeBtn);
+        if (!response.ok) {
+            throw new Error('Failed to create order');
         }
-    }
 
-    // Update Order Status
-    function updateOrderStatus(orderId, newStatus) {
-        const orderIndex = ordersData.findIndex(o => o.id.toString() === orderId);
-        if (orderIndex !== -1) {
-            ordersData[orderIndex].status = newStatus;
-            
-            // Update inventory if order is completed
-            if (newStatus === 'completed') {
-                const order = ordersData[orderIndex];
-                order.items.forEach(item => {
-                    const productIndex = inventoryData.findIndex(p => p.id === item.productId);
-                    if (productIndex !== -1) {
-                        inventoryData[productIndex].quantity -= item.quantity;
-                    }
-                });
-            }
-            
-            // Update UI
-            filterOrders();
-            closeModal();
-        }
+        const modal = bootstrap.Modal.getInstance(document.getElementById('createOrderModal'));
+        modal.hide();
+        document.getElementById('createOrderForm').reset();
+        document.getElementById('orderItems').innerHTML = '';
+        document.getElementById('orderTotal').textContent = formatPrice(0);
+        await initializeOrdersTable();
+        alert('Order created successfully!');
+    } catch (error) {
+        console.error('Error creating order:', error);
+        alert('Failed to create order');
     }
+}
 
-    // Cancel Order
-    function cancelOrder(orderId) {
-        if (confirm('Are you sure you want to cancel this order?')) {
-            updateOrderStatus(orderId, 'cancelled');
+// View order details
+async function viewOrder(id) {
+    const orders = await fetchOrders();
+    const order = orders.find(o => o.id === id);
+    if (!order) return;
+
+    const modal = new bootstrap.Modal(document.getElementById('viewOrderModal'));
+    
+    document.getElementById('viewOrderId').textContent = order.id;
+    document.getElementById('viewOrderCustomer').textContent = order.customer;
+    document.getElementById('viewOrderDate').textContent = order.date;
+    document.getElementById('viewOrderStatus').textContent = order.status;
+    
+    const itemsTable = document.getElementById('viewOrderItems');
+    itemsTable.innerHTML = '';
+    order.items.forEach(item => {
+        const row = document.createElement('tr');
+        const total = item.unitPrice * item.quantity;
+        row.innerHTML = `
+            <td>${item.name}</td>
+            <td>${item.quantity}</td>
+            <td>${formatPrice(item.unitPrice)}</td>
+            <td>${formatPrice(total)}</td>
+        `;
+        itemsTable.appendChild(row);
+    });
+    
+    document.getElementById('viewOrderTotal').textContent = formatPrice(order.total);
+    modal.show();
+}
+
+// Edit order
+async function editOrder(id) {
+    const orders = await fetchOrders();
+    const order = orders.find(o => o.id === id);
+    if (!order) return;
+
+    document.getElementById('editOrderId').value = order.id;
+    document.getElementById('editOrderCustomer').value = order.customer;
+    document.getElementById('editOrderStatus').value = order.status;
+
+    const itemsTable = document.getElementById('editOrderItems');
+    itemsTable.innerHTML = '';
+    order.items.forEach(item => {
+        const total = item.unitPrice * item.quantity;
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${item.name}</td>
+            <td>${item.quantity}</td>
+            <td>${formatPrice(item.unitPrice)}</td>
+            <td>${formatPrice(total)}</td>
+            <input type="hidden" name="editItems" value='${JSON.stringify({
+                itemId: item.productId,
+                name: item.name,
+                quantity: item.quantity,
+                price: item.unitPrice
+            })}'>
+        `;
+        itemsTable.appendChild(row);
+    });
+
+    const modal = new bootstrap.Modal(document.getElementById('editOrderModal'));
+    modal.show();
+}
+
+// Save edited order
+async function saveEditedOrder(event) {
+    event.preventDefault();
+    const id = document.getElementById('editOrderId').value;
+    
+    const items = Array.from(document.getElementsByName('editItems')).map(item => JSON.parse(item.value));
+    const order = {
+        customer: document.getElementById('editOrderCustomer').value,
+        status: document.getElementById('editOrderStatus').value,
+        items: items
+    };
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/orders/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(order)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update order');
         }
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editOrderModal'));
+        modal.hide();
+        await initializeOrdersTable();
+        alert('Order updated successfully!');
+    } catch (error) {
+        console.error('Error updating order:', error);
+        alert('Failed to update order');
     }
+}
 
-    // Open Edit Order Modal
-    function openEditModal(action, orderId = null) {
-        currentOrderId = orderId;
-        currentOrderItems = [];
-        
-        if (action === 'add') {
-            document.getElementById('edit-order-modal-title').textContent = 'Create New Order';
-            orderForm.reset();
-            document.getElementById('edit-order-id').value = '';
-            
-            // Set default date to today
-            document.getElementById('order-date').valueAsDate = new Date();
-        } else if (action === 'edit' && orderId) {
-            document.getElementById('edit-order-modal-title').textContent = 'Edit Order';
-            const order = ordersData.find(o => o.id.toString() === orderId);
-            if (order) {
-                document.getElementById('edit-order-id').value = order.id;
-                document.getElementById('order-customer').value = order.customer;
-                document.getElementById('order-contact').value = order.contact || '';
-                document.getElementById('order-email').value = order.email || '';
-                document.getElementById('order-phone').value = order.phone || '';
-                document.getElementById('order-address').value = order.address || '';
-                document.getElementById('order-notes').value = order.notes || '';
-                
-                // Set order items
-                currentOrderItems = [...order.items];
-                renderOrderItemsEditTable();
-            }
-        }
-        
-        editOrderModal.classList.add('active');
-    }
-
-    // Add Order Item
-    function addOrderItem() {
-        const itemId = parseInt(orderItemSelect.value);
-        const quantity = parseInt(orderItemQuantity.value);
-        
-        if (!itemId || isNaN(quantity) || quantity < 1) {
-            alert('Please select an item and enter a valid quantity');
-            return;
-        }
-        
-        const product = inventoryData.find(p => p.id === itemId);
-        if (!product) return;
-        
-        // Check if item already exists in order
-        const existingItemIndex = currentOrderItems.findIndex(i => i.productId === itemId);
-        
-        if (existingItemIndex !== -1) {
-            // Update quantity
-            currentOrderItems[existingItemIndex].quantity += quantity;
-        } else {
-            // Add new item
-            currentOrderItems.push({
-                productId: itemId,
-                quantity: quantity
+// Delete order
+async function deleteOrder(id) {
+    if (confirm('Are you sure you want to delete this order?')) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/orders/${id}`, {
+                method: 'DELETE'
             });
-        }
-        
-        // Reset inputs
-        orderItemSelect.value = '';
-        orderItemQuantity.value = '1';
-        
-        // Update table
-        renderOrderItemsEditTable();
-    }
 
-    // Render Order Items Edit Table
-    function renderOrderItemsEditTable() {
-        orderItemsEditBody.innerHTML = '';
-        
-        let subtotal = 0;
-        
-        currentOrderItems.forEach((item, index) => {
-            const product = inventoryData.find(p => p.id === item.productId);
-            if (product) {
-                const itemTotal = product.price * item.quantity;
-                subtotal += itemTotal;
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${product.name} (${product.category})</td>
-                    <td>${item.quantity}</td>
-                    <td>$${product.price.toFixed(2)}</td>
-                    <td>$${itemTotal.toFixed(2)}</td>
-                    <td>
-                        <button class="btn-remove-item" data-index="${index}">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                `;
-                orderItemsEditBody.appendChild(row);
+            if (!response.ok) {
+                throw new Error('Failed to delete order');
             }
+
+            await initializeOrdersTable();
+            alert('Order deleted successfully!');
+        } catch (error) {
+            console.error('Error deleting order:', error);
+            alert('Failed to delete order');
+        }
+    }
+}
+
+// Filter orders
+function filterOrders() {
+    const status = document.getElementById('status-filter').value;
+    const customer = document.getElementById('customer-filter').value.toLowerCase();
+    const fromDate = document.getElementById('from-date').value;
+    const toDate = document.getElementById('to-date').value;
+    
+    initializeOrdersTable().then(() => {
+        const rows = document.getElementById('orders-table-body').getElementsByTagName('tr');
+        
+        Array.from(rows).forEach(row => {
+            const orderStatus = row.cells[5].textContent;
+            const orderCustomer = row.cells[1].textContent.toLowerCase();
+            const orderDate = row.cells[2].textContent;
+            
+            let show = true;
+            
+            if (status !== 'all' && orderStatus !== status) show = false;
+            if (customer && !orderCustomer.includes(customer)) show = false;
+            if (fromDate && orderDate < fromDate) show = false;
+            if (toDate && orderDate > toDate) show = false;
+            
+            row.style.display = show ? '' : 'none';
         });
-        
-        // Calculate totals
-        const tax = subtotal * 0.10; // 10% tax for example
-        const total = subtotal + tax;
-        
-        document.getElementById('edit-order-subtotal').textContent = `$${subtotal.toFixed(2)}`;
-        document.getElementById('edit-order-tax').textContent = `$${tax.toFixed(2)}`;
-        document.getElementById('edit-order-total').textContent = `$${total.toFixed(2)}`;
-        
-        // Add event listeners to remove buttons
-        document.querySelectorAll('.btn-remove-item').forEach(btn => {
-            btn.addEventListener('click', () => removeOrderItem(btn.dataset.index));
+    });
+}
+
+// Reset filters
+function resetFilters() {
+    document.getElementById('status-filter').value = 'all';
+    document.getElementById('customer-filter').value = '';
+    document.getElementById('from-date').value = '';
+    document.getElementById('to-date').value = '';
+    initializeOrdersTable();
+}
+
+// Initialize the page
+document.addEventListener('DOMContentLoaded', async () => {
+    // Initialize orders table
+    await initializeOrdersTable();
+    
+    // Set up create order modal
+    const createOrderBtn = document.getElementById('create-order-btn');
+    const addItemBtn = document.getElementById('addItemBtn');
+    const saveOrderBtn = document.getElementById('saveOrderBtn');
+    
+    if (createOrderBtn) {
+        createOrderBtn.addEventListener('click', async () => {
+            await populateInventoryItems();
+            const modal = new bootstrap.Modal(document.getElementById('createOrderModal'));
+            modal.show();
         });
     }
-
-    // Remove Order Item
-    function removeOrderItem(index) {
-        currentOrderItems.splice(index, 1);
-        renderOrderItemsEditTable();
+    
+    if (addItemBtn) {
+        addItemBtn.addEventListener('click', addItemToOrder);
     }
-
-    // Save Order
-    function saveOrder() {
-        if (currentOrderItems.length === 0) {
-            alert('Please add at least one item to the order');
-            return;
+    
+    if (saveOrderBtn) {
+        saveOrderBtn.addEventListener('click', createOrder);
+    }
+    
+    // Set up filters
+    const statusFilter = document.getElementById('status-filter');
+    const fromDate = document.getElementById('from-date');
+    const toDate = document.getElementById('to-date');
+    const resetBtn = document.getElementById('reset-filters');
+    
+    [statusFilter, fromDate, toDate].forEach(filter => {
+        if (filter) {
+            filter.addEventListener('change', filterOrders);
         }
-        
-        const orderId = document.getElementById('edit-order-id').value;
-        const customer = document.getElementById('order-customer').value;
-        
-        if (!customer) {
-            alert('Please enter customer name');
-            return;
-        }
-        
-        // Calculate totals
-        let subtotal = 0;
-        currentOrderItems.forEach(item => {
-            const product = inventoryData.find(p => p.id === item.productId);
-            if (product) {
-                subtotal += product.price * item.quantity;
-            }
-        });
-        
-        const tax = subtotal * 0.10; // 10% tax for example
-        const total = subtotal + tax;
-        
-        const orderData = {
-            id: orderId ? parseInt(orderId) : generateNewOrderId(),
-            customer: customer,
-            contact: document.getElementById('order-contact').value,
-            email: document.getElementById('order-email').value,
-            phone: document.getElementById('order-phone').value,
-            address: document.getElementById('order-address').value,
-            items: [...currentOrderItems],
-            total: total,
-            status: 'pending',
-            date: new Date().toISOString().split('T')[0],
-            notes: document.getElementById('order-notes').value
-        };
-        
-        if (orderId) {
-            // Update existing order
-            const index = ordersData.findIndex(o => o.id.toString() === orderId);
-            if (index !== -1) {
-                ordersData[index] = orderData;
-            }
-        } else {
-            // Add new order
-            ordersData.unshift(orderData);
-        }
-        
-        // Update UI
-        filterOrders();
-        closeModal();
-    }
-
-    // Generate New Order ID
-    function generateNewOrderId() {
-        return ordersData.length > 0 ? Math.max(...ordersData.map(o => o.id)) + 1 : 1001;
-    }
-
-    // Print Order
-    function printOrder() {
-        window.print();
-    }
-
-    // Close Modal
-    function closeModal() {
-        orderModal.classList.remove('active');
-        editOrderModal.classList.remove('active');
-    }
-
-    // Pagination Functions
-    function updatePaginationControls() {
-        const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
-        
-        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
-        prevPageBtn.disabled = currentPage === 1;
-        nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
-    }
-
-    function goToPrevPage() {
-        if (currentPage > 1) {
-            currentPage--;
-            renderOrdersTable();
-        }
-    }
-
-    function goToNextPage() {
-        const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
-        if (currentPage < totalPages) {
-            currentPage++;
-            renderOrdersTable();
-        }
+    });
+    
+    if (resetBtn) {
+        resetBtn.addEventListener('click', resetFilters);
     }
 });

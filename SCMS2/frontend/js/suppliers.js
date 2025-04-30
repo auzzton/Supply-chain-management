@@ -1,349 +1,320 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // DOM Elements
-    const suppliersTableBody = document.getElementById('suppliers-table-body');
-    const addSupplierBtn = document.getElementById('add-supplier-btn');
-    const supplierModal = document.getElementById('supplier-modal');
-    const saveSupplierBtn = document.getElementById('save-supplier');
-    const supplierForm = document.getElementById('supplier-form');
-    const productCategoryFilter = document.getElementById('product-category-filter');
-    const ratingFilter = document.getElementById('rating-filter');
-    const suppliersSearch = document.getElementById('suppliers-search');
-    const prevPageBtn = document.getElementById('suppliers-prev-page');
-    const nextPageBtn = document.getElementById('suppliers-next-page');
-    const pageInfo = document.getElementById('suppliers-page-info');
+// API Configuration
+const API_BASE_URL = 'http://localhost:5000/api';
 
-    // State variables
-    let suppliersData = [];
-    let inventoryData = [];
-    let filteredSuppliers = [];
-    let currentPage = 1;
-    const itemsPerPage = 10;
+// Initialize Bootstrap modals
+let supplierModal;
+let viewSupplierModal;
 
-    // Initialize the page
-    initSuppliers();
+// Fetch product categories from inventory
+async function fetchProductCategories() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/inventory`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch product categories');
+        }
+        const inventory = await response.json();
+        const categories = [...new Set(inventory.map(item => item.category))];
+        return categories;
+    } catch (error) {
+        console.error('Error fetching product categories:', error);
+        return [];
+    }
+}
 
-    // Event Listeners
-    addSupplierBtn.addEventListener('click', () => openSupplierModal('add'));
-    Array.from(document.getElementsByClassName('close-modal')).forEach(btn => {
-        btn.addEventListener('click', closeModal);
+// Populate product categories dropdown
+async function populateProductCategories() {
+    const categories = await fetchProductCategories();
+    const categoryFilter = document.getElementById('product-category-filter');
+    const supplierProducts = document.getElementById('supplier-products');
+
+    // Clear existing options except the first one
+    while (categoryFilter.options.length > 1) {
+        categoryFilter.remove(1);
+    }
+    supplierProducts.innerHTML = '';
+
+    // Add categories to both dropdowns
+    categories.forEach(category => {
+        // Add to filter dropdown
+        const filterOption = document.createElement('option');
+        filterOption.value = category;
+        filterOption.textContent = category;
+        categoryFilter.appendChild(filterOption);
+
+        // Add to supplier products dropdown
+        const productOption = document.createElement('option');
+        productOption.value = category;
+        productOption.textContent = category;
+        supplierProducts.appendChild(productOption);
     });
-    saveSupplierBtn.addEventListener('click', saveSupplier);
-    productCategoryFilter.addEventListener('change', filterSuppliers);
-    ratingFilter.addEventListener('change', filterSuppliers);
-    suppliersSearch.addEventListener('input', filterSuppliers);
-    prevPageBtn.addEventListener('click', goToPrevPage);
-    nextPageBtn.addEventListener('click', goToNextPage);
-    document.getElementById('reset-suppliers-filters').addEventListener('click', resetFilters);
+}
 
-    // Initialize Suppliers Page
-    function initSuppliers() {
-        fetch('data.json')
-            .then(response => response.json())
-            .then(data => {
-                suppliersData = data.suppliers;
-                inventoryData = data.inventory;
-                filteredSuppliers = [...suppliersData];
-                
-                // Populate product categories
-                populateProductCategories();
-                
-                // Update stats
-                updateSuppliersStats();
-                
-                // Render table
-                renderSuppliersTable();
-            })
-            .catch(error => console.error('Error loading suppliers data:', error));
-    }
-
-    // Populate Product Categories
-    function populateProductCategories() {
-        const categories = [...new Set(inventoryData.map(item => item.category))];
-        
-        // For filter dropdown
-        categories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category;
-            option.textContent = category;
-            productCategoryFilter.appendChild(option);
-        });
-        
-        // For supplier modal multi-select
-        const supplierProductsSelect = document.getElementById('supplier-products');
-        categories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category;
-            option.textContent = category;
-            supplierProductsSelect.appendChild(option);
-        });
-    }
-
-    // Render Suppliers Table
-    function renderSuppliersTable() {
-        suppliersTableBody.innerHTML = '';
-        
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        const paginatedData = filteredSuppliers.slice(startIndex, endIndex);
-        
-        if (paginatedData.length === 0) {
-            const row = document.createElement('tr');
-            row.innerHTML = `<td colspan="8" class="no-data">No suppliers found</td>`;
-            suppliersTableBody.appendChild(row);
-            return;
+// Fetch suppliers data from backend
+async function fetchSuppliers() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/suppliers`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch suppliers data');
         }
-        
-        paginatedData.forEach(supplier => {
-            const row = document.createElement('tr');
-            
-            // Format rating as stars
-            const ratingStars = '★'.repeat(supplier.rating) + '☆'.repeat(5 - supplier.rating);
-            
-            // Format products as tags
-            const productsTags = supplier.products.map(product => 
-                `<span class="product-tag">${product}</span>`
-            ).join('');
-            
-            row.innerHTML = `
-                <td>${supplier.id}</td>
-                <td>${supplier.name}</td>
-                <td>${supplier.contact}</td>
-                <td>${supplier.email}</td>
-                <td><div class="products-tags">${productsTags}</div></td>
-                <td><span class="rating-stars">${ratingStars}</span></td>
-                <td><span class="supplier-status ${supplier.status}">${supplier.status.charAt(0).toUpperCase() + supplier.status.slice(1)}</span></td>
-                <td>
-                    <div class="supplier-actions">
-                        <button class="btn-supplier-action btn-view-supplier" data-id="${supplier.id}">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn-supplier-action btn-edit-supplier" data-id="${supplier.id}">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn-supplier-action btn-delete-supplier" data-id="${supplier.id}">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            `;
-            
-            suppliersTableBody.appendChild(row);
-        });
-        
-        // Add event listeners to action buttons
-        document.querySelectorAll('.btn-view-supplier').forEach(btn => {
-            btn.addEventListener('click', () => viewSupplierDetails(btn.dataset.id));
-        });
-        
-        document.querySelectorAll('.btn-edit-supplier').forEach(btn => {
-            btn.addEventListener('click', () => openSupplierModal('edit', btn.dataset.id));
-        });
-        
-        document.querySelectorAll('.btn-delete-supplier').forEach(btn => {
-            btn.addEventListener('click', () => deleteSupplier(btn.dataset.id));
-        });
-        
-        // Update pagination controls
-        updatePaginationControls();
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching suppliers:', error);
+        return [];
     }
+}
 
-    // Update Suppliers Stats
-    function updateSuppliersStats() {
-        const totalSuppliers = filteredSuppliers.length;
-        const activeSuppliers = filteredSuppliers.filter(s => s.status === 'active').length;
-        
-        // Calculate average rating
-        const totalRating = filteredSuppliers.reduce((sum, supplier) => sum + supplier.rating, 0);
-        const avgRating = totalSuppliers > 0 ? (totalRating / totalSuppliers).toFixed(1) : 0;
-        
-        // Find top category
-        const categoryCounts = {};
-        filteredSuppliers.forEach(supplier => {
-            supplier.products.forEach(product => {
-                categoryCounts[product] = (categoryCounts[product] || 0) + 1;
+// Initialize suppliers table
+async function initializeSuppliersTable() {
+    const suppliers = await fetchSuppliers();
+    const tableBody = document.getElementById('suppliers-table-body');
+    if (!tableBody) {
+        console.error('Table body element not found');
+        return;
+    }
+    tableBody.innerHTML = '';
+
+    // Get filter values
+    const categoryFilter = document.getElementById('product-category-filter').value;
+    const ratingFilter = document.getElementById('rating-filter').value;
+    const searchQuery = document.getElementById('suppliers-search').value.toLowerCase();
+
+    // Filter suppliers
+    const filteredSuppliers = suppliers.filter(supplier => {
+        const matchesCategory = categoryFilter === 'all' || supplier.products.includes(categoryFilter);
+        const matchesRating = ratingFilter === 'all' || supplier.rating >= parseInt(ratingFilter);
+        const matchesSearch = searchQuery === '' || 
+            supplier.name.toLowerCase().includes(searchQuery) ||
+            supplier.contact.toLowerCase().includes(searchQuery) ||
+            supplier.email.toLowerCase().includes(searchQuery);
+
+        return matchesCategory && matchesRating && matchesSearch;
+    });
+
+    filteredSuppliers.forEach(supplier => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${supplier.id}</td>
+            <td>${supplier.name}</td>
+            <td>${supplier.contact}</td>
+            <td>${supplier.email}</td>
+            <td>${supplier.products.join(', ')}</td>
+            <td>${'★'.repeat(supplier.rating)}${'☆'.repeat(5 - supplier.rating)}</td>
+            <td><span class="badge bg-${supplier.status === 'active' ? 'success' : supplier.status === 'inactive' ? 'danger' : 'warning'}">${supplier.status}</span></td>
+            <td>
+                <button class="btn btn-primary btn-sm" onclick="viewSupplierDetails(${supplier.id})">View</button>
+                <button class="btn btn-info btn-sm" onclick="editSupplier(${supplier.id})">Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteSupplier(${supplier.id})">Delete</button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+
+    // Update stats
+    updateSuppliersStats(filteredSuppliers);
+}
+
+// Update suppliers stats
+function updateSuppliersStats(suppliers) {
+    const totalSuppliers = suppliers.length;
+    const activeSuppliers = suppliers.filter(s => s.status === 'active').length;
+    const avgRating = totalSuppliers > 0 
+        ? (suppliers.reduce((sum, s) => sum + s.rating, 0) / totalSuppliers).toFixed(1)
+        : 0;
+
+    // Find top category
+    const categoryCounts = {};
+    suppliers.forEach(supplier => {
+        supplier.products.forEach(category => {
+            categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+        });
+    });
+    const topCategory = Object.entries(categoryCounts)
+        .sort((a, b) => b[1] - a[1])[0]?.[0] || '-';
+
+    document.getElementById('total-suppliers').textContent = totalSuppliers;
+    document.getElementById('active-suppliers').textContent = activeSuppliers;
+    document.getElementById('avg-rating').textContent = avgRating;
+    document.getElementById('top-category').textContent = topCategory;
+}
+
+// Add new supplier
+async function addNewSupplier() {
+    const supplier = {
+        name: document.getElementById('supplier-name').value,
+        contact: document.getElementById('supplier-contact').value,
+        email: document.getElementById('supplier-email').value,
+        phone: document.getElementById('supplier-phone').value,
+        address: document.getElementById('supplier-address').value,
+        products: Array.from(document.getElementById('supplier-products').selectedOptions).map(opt => opt.value),
+        rating: parseInt(document.getElementById('supplier-rating').value),
+        status: document.getElementById('supplier-status').value,
+        notes: document.getElementById('supplier-notes').value
+    };
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/suppliers`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(supplier)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to add supplier');
+        }
+
+        alert('Supplier added successfully!');
+        supplierModal.hide();
+        await initializeSuppliersTable();
+        document.getElementById('supplier-form').reset();
+    } catch (error) {
+        console.error('Error adding supplier:', error);
+        alert('Failed to add supplier');
+    }
+}
+
+// Edit supplier
+async function editSupplier(id) {
+    const suppliers = await fetchSuppliers();
+    const supplier = suppliers.find(s => s.id === id);
+    if (!supplier) return;
+
+    document.getElementById('supplier-id').value = supplier.id;
+    document.getElementById('supplier-name').value = supplier.name;
+    document.getElementById('supplier-contact').value = supplier.contact;
+    document.getElementById('supplier-email').value = supplier.email;
+    document.getElementById('supplier-phone').value = supplier.phone;
+    document.getElementById('supplier-address').value = supplier.address;
+    document.getElementById('supplier-rating').value = supplier.rating;
+    document.getElementById('supplier-status').value = supplier.status;
+    document.getElementById('supplier-notes').value = supplier.notes;
+
+    // Select products
+    const productsSelect = document.getElementById('supplier-products');
+    Array.from(productsSelect.options).forEach(option => {
+        option.selected = supplier.products.includes(option.value);
+    });
+
+    supplierModal.show();
+}
+
+// Save edited supplier
+async function saveEditedSupplier() {
+    const id = document.getElementById('supplier-id').value;
+    const supplier = {
+        name: document.getElementById('supplier-name').value,
+        contact: document.getElementById('supplier-contact').value,
+        email: document.getElementById('supplier-email').value,
+        phone: document.getElementById('supplier-phone').value,
+        address: document.getElementById('supplier-address').value,
+        products: Array.from(document.getElementById('supplier-products').selectedOptions).map(opt => opt.value),
+        rating: parseInt(document.getElementById('supplier-rating').value),
+        status: document.getElementById('supplier-status').value,
+        notes: document.getElementById('supplier-notes').value
+    };
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/suppliers/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(supplier)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update supplier');
+        }
+
+        alert('Supplier updated successfully!');
+        supplierModal.hide();
+        await initializeSuppliersTable();
+    } catch (error) {
+        console.error('Error updating supplier:', error);
+        alert('Failed to update supplier');
+    }
+}
+
+// Delete supplier
+async function deleteSupplier(id) {
+    if (confirm('Are you sure you want to delete this supplier?')) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/suppliers/${id}`, {
+                method: 'DELETE'
             });
-        });
-        
-        let topCategory = '-';
-        if (Object.keys(categoryCounts).length > 0) {
-            topCategory = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0][0];
-        }
-        
-        document.getElementById('total-suppliers').textContent = totalSuppliers;
-        document.getElementById('active-suppliers').textContent = activeSuppliers;
-        document.getElementById('avg-rating').textContent = avgRating;
-        document.getElementById('top-category').textContent = topCategory;
-    }
 
-    // Filter Suppliers
-    function filterSuppliers() {
-        const category = productCategoryFilter.value;
-        const rating = ratingFilter.value;
-        const searchTerm = suppliersSearch.value.toLowerCase();
-        
-        filteredSuppliers = suppliersData.filter(supplier => {
-            // Category filter
-            if (category !== 'all' && !supplier.products.includes(category)) return false;
-            
-            // Rating filter
-            if (rating !== 'all' && supplier.rating < parseInt(rating)) return false;
-            
-            // Search term
-            if (searchTerm && !(
-                supplier.name.toLowerCase().includes(searchTerm) ||
-                supplier.contact.toLowerCase().includes(searchTerm) ||
-                supplier.email.toLowerCase().includes(searchTerm) ||
-                supplier.id.toString().includes(searchTerm)
-            )) return false;
-            
-            return true;
-        });
-        
-        // Reset to first page
-        currentPage = 1;
-        
-        // Update table and stats
-        renderSuppliersTable();
-        updateSuppliersStats();
-    }
-
-    // Reset Filters
-    function resetFilters() {
-        productCategoryFilter.value = 'all';
-        ratingFilter.value = 'all';
-        suppliersSearch.value = '';
-        filterSuppliers();
-    }
-
-    // Open Supplier Modal
-    function openSupplierModal(action, supplierId = null) {
-        const modalTitle = document.getElementById('supplier-modal-title');
-        const form = document.getElementById('supplier-form');
-        
-        if (action === 'add') {
-            modalTitle.textContent = 'Add New Supplier';
-            form.reset();
-            document.getElementById('supplier-id').value = '';
-            document.getElementById('supplier-status').value = 'active';
-            document.getElementById('supplier-rating').value = '5';
-        } else if (action === 'edit' && supplierId) {
-            modalTitle.textContent = 'Edit Supplier';
-            const supplier = suppliersData.find(s => s.id.toString() === supplierId);
-            if (supplier) {
-                document.getElementById('supplier-id').value = supplier.id;
-                document.getElementById('supplier-name').value = supplier.name;
-                document.getElementById('supplier-contact').value = supplier.contact;
-                document.getElementById('supplier-phone').value = supplier.phone;
-                document.getElementById('supplier-email').value = supplier.email;
-                document.getElementById('supplier-address').value = supplier.address || '';
-                document.getElementById('supplier-rating').value = supplier.rating;
-                document.getElementById('supplier-status').value = supplier.status;
-                document.getElementById('supplier-notes').value = supplier.notes || '';
-                
-                // Select products
-                const productsSelect = document.getElementById('supplier-products');
-                Array.from(productsSelect.options).forEach(option => {
-                    option.selected = supplier.products.includes(option.value);
-                });
+            if (!response.ok) {
+                throw new Error('Failed to delete supplier');
             }
-        }
-        
-        supplierModal.classList.add('active');
-    }
 
-    // View Supplier Details
-    function viewSupplierDetails(supplierId) {
-        const supplier = suppliersData.find(s => s.id.toString() === supplierId);
-        if (!supplier) return;
-        
-        // In a real application, this would open a detailed view modal
-        alert(`Viewing details for supplier: ${supplier.name}\nContact: ${supplier.contact}\nEmail: ${supplier.email}`);
+            alert('Supplier deleted successfully!');
+            await initializeSuppliersTable();
+        } catch (error) {
+            console.error('Error deleting supplier:', error);
+            alert('Failed to delete supplier');
+        }
     }
+}
 
-    // Save Supplier
-    function saveSupplier() {
-        if (!supplierForm.checkValidity()) {
-            supplierForm.reportValidity();
-            return;
-        }
-        
-        const supplierId = document.getElementById('supplier-id').value;
-        const productsSelect = document.getElementById('supplier-products');
-        const selectedProducts = Array.from(productsSelect.selectedOptions).map(option => option.value);
-        
-        if (selectedProducts.length === 0) {
-            alert('Please select at least one product category');
-            return;
-        }
-        
-        const supplierData = {
-            id: supplierId ? parseInt(supplierId) : generateNewSupplierId(),
-            name: document.getElementById('supplier-name').value,
-            contact: document.getElementById('supplier-contact').value,
-            phone: document.getElementById('supplier-phone').value,
-            email: document.getElementById('supplier-email').value,
-            address: document.getElementById('supplier-address').value,
-            rating: parseInt(document.getElementById('supplier-rating').value),
-            status: document.getElementById('supplier-status').value,
-            products: selectedProducts,
-            notes: document.getElementById('supplier-notes').value
-        };
-        
-        if (supplierId) {
-            // Update existing supplier
-            const index = suppliersData.findIndex(s => s.id.toString() === supplierId);
-            if (index !== -1) {
-                suppliersData[index] = supplierData;
-            }
+// View supplier details
+async function viewSupplierDetails(id) {
+    const suppliers = await fetchSuppliers();
+    const supplier = suppliers.find(s => s.id === id);
+    if (!supplier) return;
+
+    document.getElementById('viewSupplierId').textContent = supplier.id;
+    document.getElementById('viewSupplierName').textContent = supplier.name;
+    document.getElementById('viewSupplierContact').textContent = supplier.contact;
+    document.getElementById('viewSupplierEmail').textContent = supplier.email;
+    document.getElementById('viewSupplierPhone').textContent = supplier.phone;
+    document.getElementById('viewSupplierAddress').textContent = supplier.address;
+    document.getElementById('viewSupplierProducts').textContent = supplier.products.join(', ');
+    document.getElementById('viewSupplierRating').textContent = '★'.repeat(supplier.rating) + '☆'.repeat(5 - supplier.rating);
+    document.getElementById('viewSupplierStatus').textContent = supplier.status;
+    document.getElementById('viewSupplierNotes').textContent = supplier.notes;
+
+    viewSupplierModal.show();
+}
+
+// Reset filters
+function resetFilters() {
+    document.getElementById('product-category-filter').value = 'all';
+    document.getElementById('rating-filter').value = 'all';
+    document.getElementById('suppliers-search').value = '';
+    initializeSuppliersTable();
+}
+
+// Initialize when document is ready
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize Bootstrap modals
+    supplierModal = new bootstrap.Modal(document.getElementById('supplier-modal'));
+    viewSupplierModal = new bootstrap.Modal(document.getElementById('viewSupplierModal'));
+
+    // Initialize table and populate categories
+    initializeSuppliersTable();
+    populateProductCategories();
+    
+    // Add event listeners
+    document.getElementById('add-supplier-btn').addEventListener('click', () => {
+        document.getElementById('supplier-form').reset();
+        document.getElementById('supplier-id').value = '';
+        supplierModal.show();
+    });
+    
+    document.getElementById('reset-suppliers-filters').addEventListener('click', resetFilters);
+    
+    // Add filter change listeners
+    document.getElementById('product-category-filter').addEventListener('change', initializeSuppliersTable);
+    document.getElementById('rating-filter').addEventListener('change', initializeSuppliersTable);
+    document.getElementById('suppliers-search').addEventListener('input', initializeSuppliersTable);
+
+    // Add save button click handler
+    document.getElementById('save-supplier').addEventListener('click', () => {
+        if (document.getElementById('supplier-id').value) {
+            saveEditedSupplier();
         } else {
-            // Add new supplier
-            suppliersData.unshift(supplierData);
+            addNewSupplier();
         }
-        
-        // Update UI
-        filterSuppliers();
-        closeModal();
-    }
-
-    // Delete Supplier
-    function deleteSupplier(supplierId) {
-        if (confirm('Are you sure you want to delete this supplier?')) {
-            suppliersData = suppliersData.filter(s => s.id.toString() !== supplierId);
-            filterSuppliers();
-        }
-    }
-
-    // Generate New Supplier ID
-    function generateNewSupplierId() {
-        return suppliersData.length > 0 ? Math.max(...suppliersData.map(s => s.id)) + 1 : 1;
-    }
-
-    // Close Modal
-    function closeModal() {
-        supplierModal.classList.remove('active');
-    }
-
-    // Pagination Functions
-    function updatePaginationControls() {
-        const totalPages = Math.ceil(filteredSuppliers.length / itemsPerPage);
-        
-        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
-        prevPageBtn.disabled = currentPage === 1;
-        nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
-    }
-
-    function goToPrevPage() {
-        if (currentPage > 1) {
-            currentPage--;
-            renderSuppliersTable();
-        }
-    }
-
-    function goToNextPage() {
-        const totalPages = Math.ceil(filteredSuppliers.length / itemsPerPage);
-        if (currentPage < totalPages) {
-            currentPage++;
-            renderSuppliersTable();
-        }
-    }
+    });
 });

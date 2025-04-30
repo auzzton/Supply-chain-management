@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/suppliers.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container">
@@ -17,7 +18,7 @@
             </div>
             <nav>
                 <ul>
-                    <li><a href="index.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                     <li><a href="inventory.html"><i class="fas fa-box-open"></i> Inventory</a></li>
                     <li><a href="orders.html"><i class="fas fa-clipboard-list"></i> Orders</a></li>
                     <li class="active"><a href="suppliers.html"><i class="fas fa-truck"></i> Suppliers</a></li>
@@ -110,91 +111,142 @@
                         <!-- Filled by JavaScript -->
                     </tbody>
                 </table>
-                <div class="table-pagination">
-                    <button class="btn btn-secondary" id="suppliers-prev-page" disabled>
-                        <i class="fas fa-chevron-left"></i> Previous
-                    </button>
-                    <span id="suppliers-page-info">Page 1 of 1</span>
-                    <button class="btn btn-secondary" id="suppliers-next-page" disabled>
-                        Next <i class="fas fa-chevron-right"></i>
-                    </button>
-                </div>
             </div>
         </main>
     </div>
 
     <!-- Add/Edit Supplier Modal -->
-    <div class="modal" id="supplier-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="supplier-modal-title">Add New Supplier</h3>
-                <button class="close-modal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="supplier-form">
-                    <input type="hidden" id="supplier-id">
-                    <div class="form-group">
-                        <label for="supplier-name">Supplier Name</label>
-                        <input type="text" id="supplier-name" required>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="supplier-contact">Contact Person</label>
-                            <input type="text" id="supplier-contact" required>
+    <div class="modal fade" id="supplier-modal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="supplier-modal-title">Add New Supplier</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="supplier-form">
+                        <input type="hidden" id="supplier-id">
+                        <div class="mb-3">
+                            <label for="supplier-name" class="form-label">Supplier Name</label>
+                            <input type="text" class="form-control" id="supplier-name" required>
                         </div>
-                        <div class="form-group">
-                            <label for="supplier-phone">Phone</label>
-                            <input type="tel" id="supplier-phone" required>
+                        <div class="row mb-3">
+                            <div class="col">
+                                <label for="supplier-contact" class="form-label">Contact Person</label>
+                                <input type="text" class="form-control" id="supplier-contact" required>
+                            </div>
+                            <div class="col">
+                                <label for="supplier-phone" class="form-label">Phone</label>
+                                <input type="tel" class="form-control" id="supplier-phone" required>
+                            </div>
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="supplier-email">Email</label>
-                        <input type="email" id="supplier-email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="supplier-address">Address</label>
-                        <textarea id="supplier-address" rows="2" required></textarea>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="supplier-rating">Rating</label>
-                            <select id="supplier-rating" required>
-                                <option value="5">5 Stars</option>
-                                <option value="4">4 Stars</option>
-                                <option value="3">3 Stars</option>
-                                <option value="2">2 Stars</option>
-                                <option value="1">1 Star</option>
+                        <div class="mb-3">
+                            <label for="supplier-email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="supplier-email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="supplier-address" class="form-label">Address</label>
+                            <textarea class="form-control" id="supplier-address" rows="2" required></textarea>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col">
+                                <label for="supplier-rating" class="form-label">Rating</label>
+                                <select class="form-select" id="supplier-rating" required>
+                                    <option value="5">5 Stars</option>
+                                    <option value="4">4 Stars</option>
+                                    <option value="3">3 Stars</option>
+                                    <option value="2">2 Stars</option>
+                                    <option value="1">1 Star</option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <label for="supplier-status" class="form-label">Status</label>
+                                <select class="form-select" id="supplier-status" required>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="pending">Pending Approval</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="supplier-products" class="form-label">Products/Categories</label>
+                            <select class="form-select" id="supplier-products" multiple>
+                                <!-- Filled by JavaScript -->
                             </select>
+                            <div class="form-text">Hold Ctrl/Cmd to select multiple</div>
                         </div>
-                        <div class="form-group">
-                            <label for="supplier-status">Status</label>
-                            <select id="supplier-status" required>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                                <option value="pending">Pending Approval</option>
-                            </select>
+                        <div class="mb-3">
+                            <label for="supplier-notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="supplier-notes" rows="3"></textarea>
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="supplier-products">Products/Categories</label>
-                        <select id="supplier-products" multiple>
-                            <!-- Filled by JavaScript -->
-                        </select>
-                        <small class="form-hint">Hold Ctrl/Cmd to select multiple</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="supplier-notes">Notes</label>
-                        <textarea id="supplier-notes" rows="3"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary close-modal">Cancel</button>
-                <button class="btn btn-primary" id="save-supplier">Save Supplier</button>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="save-supplier">Save Supplier</button>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- View Supplier Modal -->
+    <div class="modal fade" id="viewSupplierModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Supplier Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">ID</label>
+                        <div id="viewSupplierId"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Name</label>
+                        <div id="viewSupplierName"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Contact</label>
+                        <div id="viewSupplierContact"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <div id="viewSupplierEmail"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Phone</label>
+                        <div id="viewSupplierPhone"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Address</label>
+                        <div id="viewSupplierAddress"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Products</label>
+                        <div id="viewSupplierProducts"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Rating</label>
+                        <div id="viewSupplierRating"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <div id="viewSupplierStatus"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <div id="viewSupplierNotes"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/suppliers.js"></script>
 </body>
 </html>
